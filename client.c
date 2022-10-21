@@ -17,6 +17,7 @@ int main(int argc, char *argv[])
     }
     int sock;
     struct sockaddr_in my_addr;
+    fd_set f_des;
 
     // Initializing socket
     sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -35,8 +36,18 @@ int main(int argc, char *argv[])
     char msg[buff_size] = "SYN";
     char to_rcv[buff_size];
     int i;
-    for (i = 0; i < 1; i++)
+
+    FD_ZERO(&f_des);
+    FD_SET(sock, &f_des);
+    sendto(sock, msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
+    printf("Sent ACK\n");
+    //select(sock + 1, &f_des, NULL, NULL, NULL);
+    recvfrom(sock, (char *)to_rcv, buff_size, MSG_WAITALL, (struct sockaddr *)&my_addr, &taille);
+    printf("Received : %s\n", to_rcv);
+    if (strcmp(to_rcv, "SYNACK") == 0)
     {
+        char msg[buff_size] = "ACK";
         sendto(sock, msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
+        printf("Sent ACK\n");
     }
 }

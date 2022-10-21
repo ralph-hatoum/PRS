@@ -61,20 +61,32 @@ int main(int argc, char *argv[])
         // On surveille les deux sockets maintenant
         //printf("Waiting for messages or connections\n");
 
-        select(udp_sock + 1, &f_des, NULL, NULL, NULL);
+        //select(udp_sock + 1, &f_des, NULL, NULL, NULL);
 
         //rintf("Connection/message detected \n");
 
-        if (FD_ISSET(udp_sock, &f_des))
+        //printf("UDP message detected\n");
+
+        char msg_udp[9];
+        recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
+        printf("Message on UDP socket : %s\n", msg_udp);
+        if (strcmp(msg_udp, "SYN") == 0)
         {
-            //printf("UDP message detected\n");
-            if (fork() == 0)
+            printf("Someone attempting to connect ...\n");
+            char SYNACK[8] = "SYNACK";
+            sendto(udp_sock, SYNACK, 8, 0, (struct sockaddr *)&c_addr, c_addr_size);
+            FD_ZERO(&f_des);
+            //printf("Zeroed\n");
+            FD_SET(udp_sock, &f_des);
+            //select(udp_sock + 1, &f_des, NULL, NULL, NULL);
+            char msg_udp[9];
+            printf("Current buff : %s\n", msg_udp);
+            recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
+            if (strcmp(msg_udp, "ACK") == 0)
             {
-                char msg_udp[8];
-                recvfrom(udp_sock, (char *)msg_udp, 8, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
-                printf("Message on UDP socket : %s\n", msg_udp);
-                exit(0);
+                printf("Received : %s, connection established !!!\n", msg_udp);
             }
         }
+        exit(0);
     };
 }
