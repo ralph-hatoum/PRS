@@ -103,6 +103,16 @@ int main(int argc, char *argv[])
             if (strcmp(msg_udp, "ACK") == 0)
             {
                 printf("Received : %s, connection established !!!\n", msg_udp);
+
+                FILE *fichier = NULL;
+                printf("Reading and sending file ...");
+                //Opening file + reading
+                char file_buffer[1024];
+                fichier = fopen("./text.txt", "r");
+                while (1)
+                {
+                    fread(file_buffer, 1024, 1, fichier);
+                }
             }
         }
         //exit(0);

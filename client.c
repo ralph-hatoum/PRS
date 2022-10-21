@@ -65,5 +65,6 @@ int main(int argc, char *argv[])
 
         sendto(sock, msg, buff_size, 0, (struct sockaddr *)&new_sock, taille_new_sock);
         printf("Sent ACK\n");
+        printf("Connection established ! Waiting for file ... \n");
     }
 }
