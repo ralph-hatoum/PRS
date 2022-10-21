@@ -45,17 +45,17 @@ int main(int argc, char *argv[])
     struct sockaddr_in c_addr;
     int c_addr_size = sizeof(c_addr);
 
-    FD_ZERO(&f_des);
+    //FD_ZERO(&f_des);
     //printf("Zeroed\n");
-    FD_SET(udp_sock, &f_des);
+    // FD_SET(udp_sock, &f_des);
     //printf("Set socket\n");
 
     while (1)
     {
         // On réinitialise les bits correspondants aux socket dans le file descriptor
-        FD_ZERO(&f_des);
+        //FD_ZERO(&f_des);
         //printf("Zeroed\n");
-        FD_SET(udp_sock, &f_des);
+        //FD_SET(udp_sock, &f_des);
         //printf("Set socket\n");
 
         // On surveille les deux sockets maintenant
@@ -72,21 +72,39 @@ int main(int argc, char *argv[])
         printf("Message on UDP socket : %s\n", msg_udp);
         if (strcmp(msg_udp, "SYN") == 0)
         {
+            // On a reçu un ACK
             printf("Someone attempting to connect ...\n");
-            char SYNACK[8] = "SYNACK";
-            sendto(udp_sock, SYNACK, 8, 0, (struct sockaddr *)&c_addr, c_addr_size);
-            FD_ZERO(&f_des);
+
+            //Création de la nouvelle socket
+            int new_socket = socket(AF_INET, SOCK_DGRAM, 0);
+            int new_port = atoi(argv[1]) + 1;
+            struct sockaddr_in addr_new_sock;
+            memset((char *)&addr_new_sock, 0, sizeof(addr_new_sock));
+            addr_new_sock.sin_family = AF_INET;
+            addr_new_sock.sin_port = htons(new_port);
+            addr_new_sock.sin_addr.s_addr = INADDR_ANY;
+
+            bind(new_socket, (struct sockaddr *)&addr_new_sock, sizeof(addr_new_sock));
+
+            //Renvoi du SYNACK+nouveau port de connexion
+            char SYNACK[1024];
+            snprintf(SYNACK, 1024, "SYNACK %d", new_port);
+            printf("%s\n", SYNACK);
+            sendto(udp_sock, SYNACK, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+
+            //FD_ZERO(&f_des);
             //printf("Zeroed\n");
-            FD_SET(udp_sock, &f_des);
+            //FD_SET(udp_sock, &f_des);
             //select(udp_sock + 1, &f_des, NULL, NULL, NULL);
             char msg_udp[9];
             printf("Current buff : %s\n", msg_udp);
-            recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
+            recvfrom(new_socket, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&addr_new_sock, &addr_new_sock);
+
             if (strcmp(msg_udp, "ACK") == 0)
             {
                 printf("Received : %s, connection established !!!\n", msg_udp);
             }
         }
-        exit(0);
+        //exit(0);
     };
 }

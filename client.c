@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define buff_size 9
+#define buff_size 1024
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -44,10 +44,26 @@ int main(int argc, char *argv[])
     //select(sock + 1, &f_des, NULL, NULL, NULL);
     recvfrom(sock, (char *)to_rcv, buff_size, MSG_WAITALL, (struct sockaddr *)&my_addr, &taille);
     printf("Received : %s\n", to_rcv);
-    if (strcmp(to_rcv, "SYNACK") == 0)
+
+    // Separating new port and synack
+    char *buff_to_compare = strtok(to_rcv, " ");
+    char *port_to_contact = strtok(NULL, " ");
+    if (strcmp(buff_to_compare, "SYNACK") == 0)
     {
+        int new_port = atoi(port_to_contact);
+        printf("%d\n", new_port);
         char msg[buff_size] = "ACK";
-        sendto(sock, msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
+
+        struct sockaddr_in new_sock;
+        memset((char *)&new_sock, 0, sizeof(new_sock));
+        new_sock.sin_family = AF_INET;
+
+        new_sock.sin_port = htons(new_port);
+        inet_aton(argv[1], &new_sock.sin_addr);
+        new_sock.sin_addr.s_addr = htonl(new_sock.sin_addr.s_addr);
+        uint taille_new_sock = sizeof(new_sock);
+
+        sendto(sock, msg, buff_size, 0, (struct sockaddr *)&new_sock, taille_new_sock);
         printf("Sent ACK\n");
     }
 }
