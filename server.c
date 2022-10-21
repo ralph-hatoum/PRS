@@ -105,14 +105,24 @@ int main(int argc, char *argv[])
                 printf("Received : %s, connection established !!!\n", msg_udp);
 
                 FILE *fichier = NULL;
-                printf("Reading and sending file ...");
+                printf("Reading and sending file ...\n");
                 //Opening file + reading
+
+                int sent_bytes = 0;
                 char file_buffer[1024];
                 fichier = fopen("./text.txt", "r");
-                while (1)
+                int size = ftell(fichier);
+                fseek(fichier, 0, SEEK_SET);
+                printf("Taille fichier %d", size);
+                int iterations = size / 1024;
+                int i;
+                for (i = 0; i < iterations; i++)
                 {
                     fread(file_buffer, 1024, 1, fichier);
+                    printf("%s", file_buffer);
+                    //sendto(new_socket, )
                 }
+                fread(file_buffer, size - iterations * 1024, 1, fichier);
             }
         }
         //exit(0);
