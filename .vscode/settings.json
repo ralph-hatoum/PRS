@@ -14,5 +14,25 @@
   "C_Cpp_Runner.cppStandard": "",
   "C_Cpp_Runner.excludeSearch": [],
   "C_Cpp_Runner.enableWarnings": true,
-  "C_Cpp_Runner.warningsAsError": false
+  "C_Cpp_Runner.warningsAsError": false,
+  "files.associations": {
+    "__hash_table": "c",
+    "__split_buffer": "c",
+    "__tree": "c",
+    "array": "c",
+    "bitset": "c",
+    "deque": "c",
+    "initializer_list": "c",
+    "iterator": "c",
+    "map": "c",
+    "queue": "c",
+    "random": "c",
+    "set": "c",
+    "string": "c",
+    "string_view": "c",
+    "unordered_map": "c",
+    "unordered_set": "c",
+    "utility": "c",
+    "vector": "c"
+  }
 }

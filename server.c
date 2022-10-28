@@ -78,34 +78,59 @@ int main(int argc, char *argv[])
 
             // On ecoute maintenant sur la nouvelle socket
             char msg_udp[9];
-            recvfrom(new_socket, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&addr_new_sock, &addr_new_sock);
+            recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
 
             if (strcmp(msg_udp, "ACK") == 0)
             {
                 // Si on reçoit un ack sur cette nouvelle socket, connexion établie, on peut communiquer
-                printf("Received : %s, connection established !!!\n", msg_udp);
+                printf("Received : %s from socket number %d, connection established !!!\n", msg_udp, udp_sock);
 
                 FILE *fichier = NULL;
                 printf("Reading and sending file ...\n");
+
                 //Opening file + reading
-
                 int sent_bytes = 0;
-                char file_buffer[1024];
+                char file_buffer[1020];
                 fichier = fopen("./text.txt", "r");
+                fseek(fichier, 0, SEEK_END);
                 int size = ftell(fichier);
-                fseek(fichier, 0, SEEK_SET);
-                printf("Taille fichier %d", size);
-                int iterations = size / 1024;
+                int iterations = size / 1020;
+                printf("Taille fichier %d\n", size);
+                // Sending file size
+                //char file_size_buff[1024];
+                //sendto(
                 int i;
-
+                fseek(fichier, 0, SEEK_SET);
                 // Envoi du fichier
+                printf("Sending file on socket number %d\n", new_socket);
                 for (i = 0; i < iterations; i++)
                 {
-                    fread(file_buffer, 1024, 1, fichier);
-                    printf("%s", file_buffer);
-                    //sendto(new_socket, )
+                    // Initializing sending buffer
+                    char to_send[1024];
+                    // Adding seq number to the start of the buffer
+                    sprintf(to_send, "%d ", i);
+                    // Reading 1020 bytes of the file
+                    fread(file_buffer, 1020, 1, fichier);
+                    // writing these bytes to the buffer to send
+                    sprintf(to_send + strlen(to_send), "%s", file_buffer);
+                    printf("%s\n\n", to_send);
+                    // sending the buffer
+                    sendto(new_socket, file_buffer, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                 }
-                fread(file_buffer, size - iterations * 1024, 1, fichier);
+                //Last buffer needs to be dealt with differently
+                char to_send[1024];
+                // Adding seq number
+                sprintf(to_send, "%d ", iterations);
+                // Initializing last file buffer to the right size
+                char last_file_buffer[size - (iterations)*1020];
+                // Reading from file into last file buffer
+                fread(last_file_buffer, size - (iterations)*1020, 1, fichier);
+                // Adding last file buffer content to sending buffer
+                sprintf(to_send + strlen(to_send), "%s", last_file_buffer);
+                printf("%s\n\n", to_send);
+                // sending it
+                sendto(new_socket, file_buffer, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+                printf("File sent ! \n");
             }
         }
         //exit(0);

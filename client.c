@@ -50,6 +50,11 @@ int main(int argc, char *argv[])
     char *port_to_contact = strtok(NULL, " ");
     if (strcmp(buff_to_compare, "SYNACK") == 0)
     {
+        int data_sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (data_sock < 0)
+        {
+            exit(1);
+        }
         int new_port = atoi(port_to_contact);
         printf("%d\n", new_port);
         char msg[buff_size] = "ACK";
@@ -63,8 +68,16 @@ int main(int argc, char *argv[])
         new_sock.sin_addr.s_addr = htonl(new_sock.sin_addr.s_addr);
         uint taille_new_sock = sizeof(new_sock);
 
-        sendto(sock, msg, buff_size, 0, (struct sockaddr *)&new_sock, taille_new_sock);
-        printf("Sent ACK\n");
+        bind(data_sock, (struct sockaddr *)&new_sock, sizeof(new_sock));
+
+        sendto(sock, (char *)msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
+        printf("Sent ACK on socket number %d\n", sock);
         printf("Connection established ! Waiting for file ... \n");
+
+        char file[buff_size];
+
+        recvfrom(data_sock, (char *)file, buff_size, 0, (struct sockaddr *)&new_sock, taille_new_sock);
+
+        printf("%s\n", file);
     }
 }
