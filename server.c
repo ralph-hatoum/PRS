@@ -11,12 +11,14 @@
 
 int main(int argc, char *argv[])
 {
+    // On vérifie que le port du serveur est bien fourni en argument
     if (argc != 2)
     {
         printf("Utilisation : ./server <port UDP>\n");
         exit(0);
     }
 
+    // Initialisation de variables
     int udp_sock;
     int reuse = 1;
     struct sockaddr_in my_addr_udp;
@@ -45,37 +47,19 @@ int main(int argc, char *argv[])
     struct sockaddr_in c_addr;
     int c_addr_size = sizeof(c_addr);
 
-    //FD_ZERO(&f_des);
-    //printf("Zeroed\n");
-    // FD_SET(udp_sock, &f_des);
-    //printf("Set socket\n");
-
     while (1)
     {
-        // On réinitialise les bits correspondants aux socket dans le file descriptor
-        //FD_ZERO(&f_des);
-        //printf("Zeroed\n");
-        //FD_SET(udp_sock, &f_des);
-        //printf("Set socket\n");
-
-        // On surveille les deux sockets maintenant
-        //printf("Waiting for messages or connections\n");
-
-        //select(udp_sock + 1, &f_des, NULL, NULL, NULL);
-
-        //rintf("Connection/message detected \n");
-
-        //printf("UDP message detected\n");
-
+        // Initialisation d'un buffer + lecture sur la socket UDP
         char msg_udp[9];
         recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
         printf("Message on UDP socket : %s\n", msg_udp);
+
         if (strcmp(msg_udp, "SYN") == 0)
         {
-            // On a reçu un ACK
+            // On est ici si le message reçu est un ACK
             printf("Someone attempting to connect ...\n");
 
-            //Création de la nouvelle socket
+            //Initialisation de la socket de discussion
             int new_socket = socket(AF_INET, SOCK_DGRAM, 0);
             int new_port = atoi(argv[1]) + 1;
             struct sockaddr_in addr_new_sock;
@@ -92,16 +76,13 @@ int main(int argc, char *argv[])
             printf("%s\n", SYNACK);
             sendto(udp_sock, SYNACK, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
 
-            //FD_ZERO(&f_des);
-            //printf("Zeroed\n");
-            //FD_SET(udp_sock, &f_des);
-            //select(udp_sock + 1, &f_des, NULL, NULL, NULL);
+            // On ecoute maintenant sur la nouvelle socket
             char msg_udp[9];
-            printf("Current buff : %s\n", msg_udp);
             recvfrom(new_socket, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&addr_new_sock, &addr_new_sock);
 
             if (strcmp(msg_udp, "ACK") == 0)
             {
+                // Si on reçoit un ack sur cette nouvelle socket, connexion établie, on peut communiquer
                 printf("Received : %s, connection established !!!\n", msg_udp);
 
                 FILE *fichier = NULL;
@@ -116,6 +97,8 @@ int main(int argc, char *argv[])
                 printf("Taille fichier %d", size);
                 int iterations = size / 1024;
                 int i;
+
+                // Envoi du fichier
                 for (i = 0; i < iterations; i++)
                 {
                     fread(file_buffer, 1024, 1, fichier);
