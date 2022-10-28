@@ -56,17 +56,23 @@ int main(int argc, char *argv[])
 
         if (strcmp(msg_udp, "SYN") == 0)
         {
-            // On est ici si le message reçu est un ACK
+            // On est ici si le message reçu est un SYN
             printf("Someone attempting to connect ...\n");
 
             //Initialisation de la socket de discussion
             int new_socket = socket(AF_INET, SOCK_DGRAM, 0);
+            if (new_socket < 0)
+            {
+                printf("New udp socket failed");
+                exit(-1);
+            }
             int new_port = atoi(argv[1]) + 1;
             struct sockaddr_in addr_new_sock;
             memset((char *)&addr_new_sock, 0, sizeof(addr_new_sock));
             addr_new_sock.sin_family = AF_INET;
             addr_new_sock.sin_port = htons(new_port);
             addr_new_sock.sin_addr.s_addr = INADDR_ANY;
+            setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 
             bind(new_socket, (struct sockaddr *)&addr_new_sock, sizeof(addr_new_sock));
 
@@ -76,13 +82,13 @@ int main(int argc, char *argv[])
             printf("%s\n", SYNACK);
             sendto(udp_sock, SYNACK, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
 
-            // On ecoute maintenant sur la nouvelle socket
+            // On envoie recoit le SYN sur l'ancienne socket
             char msg_udp[9];
             recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
 
             if (strcmp(msg_udp, "ACK") == 0)
             {
-                // Si on reçoit un ack sur cette nouvelle socket, connexion établie, on peut communiquer
+                // Si on reçoit un ack, connexion établie, on peut communiquer sur la nouvelle socket
                 printf("Received : %s from socket number %d, connection established !!!\n", msg_udp, udp_sock);
 
                 FILE *fichier = NULL;
@@ -96,9 +102,13 @@ int main(int argc, char *argv[])
                 int size = ftell(fichier);
                 int iterations = size / 1020;
                 printf("Taille fichier %d\n", size);
+
                 // Sending file size
-                //char file_size_buff[1024];
-                //sendto(
+                char file_size_buff[9];
+                sprintf(file_size_buff, "%d", size);
+                sendto(new_socket, (char *)file_size_buff, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, c_addr_size);
+                printf("Sent %s on socket number %d\n", file_size_buff, new_socket);
+
                 int i;
                 fseek(fichier, 0, SEEK_SET);
                 // Envoi du fichier
@@ -108,9 +118,9 @@ int main(int argc, char *argv[])
                     // Initializing sending buffer
                     char to_send[1024];
                     // Adding seq number to the start of the buffer
-                    sprintf(to_send, "%d ", i);
+                    sprintf(to_send, "%d", i);
                     // Reading 1020 bytes of the file
-                    fread(file_buffer, 1020, 1, fichier);
+                    fread(file_buffer, 1020, 1, fichier); // MIEUX DE LIRE TOUT LE FICHIER D'UN COUP
                     // writing these bytes to the buffer to send
                     sprintf(to_send + strlen(to_send), "%s", file_buffer);
                     printf("%s\n\n", to_send);
@@ -118,7 +128,7 @@ int main(int argc, char *argv[])
                     sendto(new_socket, file_buffer, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                 }
                 //Last buffer needs to be dealt with differently
-                char to_send[1024];
+                char to_send[size - (iterations)*1020 + 4];
                 // Adding seq number
                 sprintf(to_send, "%d ", iterations);
                 // Initializing last file buffer to the right size
@@ -127,7 +137,7 @@ int main(int argc, char *argv[])
                 fread(last_file_buffer, size - (iterations)*1020, 1, fichier);
                 // Adding last file buffer content to sending buffer
                 sprintf(to_send + strlen(to_send), "%s", last_file_buffer);
-                printf("%s\n\n", to_send);
+                //printf("%s\n\n", to_send);
                 // sending it
                 sendto(new_socket, file_buffer, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                 printf("File sent ! \n");

@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     int i;
 
     FD_ZERO(&f_des);
-    FD_SET(sock, &f_des);
+    //FD_SET(sock, &f_des);
     sendto(sock, msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
     printf("Sent ACK\n");
     //select(sock + 1, &f_des, NULL, NULL, NULL);
@@ -50,11 +50,12 @@ int main(int argc, char *argv[])
     char *port_to_contact = strtok(NULL, " ");
     if (strcmp(buff_to_compare, "SYNACK") == 0)
     {
-        int data_sock = socket(AF_INET, SOCK_DGRAM, 0);
-        if (data_sock < 0)
+        //int data_sock;
+        //data_sock = socket(AF_INET, SOCK_DGRAM, 0);
+        /*if (data_sock < 0)
         {
             exit(1);
-        }
+        }*/
         int new_port = atoi(port_to_contact);
         printf("%d\n", new_port);
         char msg[buff_size] = "ACK";
@@ -62,22 +63,46 @@ int main(int argc, char *argv[])
         struct sockaddr_in new_sock;
         memset((char *)&new_sock, 0, sizeof(new_sock));
         new_sock.sin_family = AF_INET;
-
         new_sock.sin_port = htons(new_port);
         inet_aton(argv[1], &new_sock.sin_addr);
         new_sock.sin_addr.s_addr = htonl(new_sock.sin_addr.s_addr);
-        uint taille_new_sock = sizeof(new_sock);
+        uint size_new_sock = sizeof(new_sock);
 
-        bind(data_sock, (struct sockaddr *)&new_sock, sizeof(new_sock));
+        //bind(data_sock, (struct sockaddr *)&new_sock, sizeof(new_sock));
 
         sendto(sock, (char *)msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
         printf("Sent ACK on socket number %d\n", sock);
         printf("Connection established ! Waiting for file ... \n");
+        char file_size_buff[buff_size];
+        // printf("current buff : %s\n", file_size);
+        //FD_SET(data_sock, &f_des);
+        //select(data_sock + 1, &f_des, NULL, NULL, NULL);
+        recvfrom(sock, (char *)file_size_buff, 9, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
 
-        char file[buff_size];
+        printf("Received file size : %s\n", file_size_buff);
 
-        recvfrom(data_sock, (char *)file, buff_size, 0, (struct sockaddr *)&new_sock, taille_new_sock);
+        int file_size = atoi(file_size_buff);
 
-        printf("%s\n", file);
+        int iterations = file_size / buff_size;
+
+        int i;
+        FILE *fichier = NULL;
+        fichier = fopen("./result.txt", "w");
+        int n;
+        for (i = 0; i < iterations; i++)
+        {
+            char to_rcv[buff_size];
+            recvfrom(sock, (char *)to_rcv, buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+            fprintf(fichier, "%s", to_rcv);
+            printf("MSG : %s\n", to_rcv);
+        }
+        //printf("BEFORE buff \n");
+        char last_to_rcv[file_size - iterations * 1024];
+        //printf("BEFORE SENDINg \n");
+        recvfrom(sock, (char *)to_rcv, file_size - iterations * 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        fprintf(fichier, "%s", last_to_rcv);
+        fclose(fichier);
+        //printf("after SENDINg \n");
+        printf("MSG : %s\n", last_to_rcv);
     }
 }
