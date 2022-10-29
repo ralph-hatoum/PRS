@@ -97,10 +97,11 @@ int main(int argc, char *argv[])
                 //Opening file + reading
                 int sent_bytes = 0;
                 char file_buffer[1020];
-                fichier = fopen("./text.txt", "r");
+                fichier = fopen("./IMHURT10.jpg", "r");
                 fseek(fichier, 0, SEEK_END);
                 int size = ftell(fichier);
                 int iterations = size / 1020;
+                size += 4 * iterations;
                 printf("Taille fichier %d\n", size);
 
                 // Sending file size

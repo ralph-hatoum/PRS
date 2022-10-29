@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
         int i;
         FILE *fichier = NULL;
-        fichier = fopen("./result.txt", "w");
+        fichier = fopen("./result.jpg", "w");
         int n;
         for (i = 0; i < iterations; i++)
         {
