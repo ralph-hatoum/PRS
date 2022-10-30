@@ -92,14 +92,17 @@ int main(int argc, char *argv[])
         for (i = 0; i < iterations; i++)
         {
             char to_rcv[buff_size];
+            printf("Before reading from socket : %s\n", to_rcv);
             recvfrom(sock, (char *)to_rcv, buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+            //char to_write[1024];
+            //strncpy(to_write, to_rcv, 1015);
             fprintf(fichier, "%s", to_rcv);
             printf("MSG : %s\n", to_rcv);
         }
         //printf("BEFORE buff \n");
         char last_to_rcv[file_size - iterations * 1024];
         //printf("BEFORE SENDINg \n");
-        recvfrom(sock, (char *)last_to_rcv, file_size - iterations * 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        recvfrom(sock, (char *)last_to_rcv, file_size - iterations * buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
         fprintf(fichier, "%s", last_to_rcv);
         fclose(fichier);
         //printf("after SENDINg \n");

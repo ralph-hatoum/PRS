@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
                 fseek(fichier, 0, SEEK_SET);
                 // Envoi du fichier
                 printf("Sending file on socket number %d\n", new_socket);
+
                 for (i = 0; i < iterations; i++)
                 {
                     printf("%d\n\n", i);
