@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
         int i;
         FILE *fichier = NULL;
-        fichier = fopen("./result.jpg", "w");
+        fichier = fopen("./result.txt", "w");
         int n;
         for (i = 0; i < iterations; i++)
         {
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
         //printf("BEFORE buff \n");
         char last_to_rcv[file_size - iterations * 1024];
         //printf("BEFORE SENDINg \n");
-        recvfrom(sock, (char *)to_rcv, file_size - iterations * 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        recvfrom(sock, (char *)last_to_rcv, file_size - iterations * 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
         fprintf(fichier, "%s", last_to_rcv);
         fclose(fichier);
         //printf("after SENDINg \n");
