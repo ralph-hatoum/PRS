@@ -76,10 +76,11 @@ int main(int argc, char *argv[])
         printf("Connection established ! Waiting for file ... \n");
         char file_size_buff[buff_size];
         memset(file_size_buff, 0, sizeof(file_size_buff));
-        recvfrom(sock, (char *)file_size_buff, 2, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        recvfrom(sock, (char *)file_size_buff, buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
 
         printf("Received number of iterations to read : %s\n", file_size_buff);
-        int iterations = atoi(file_size_buff);
+        int file_size = atoi(file_size_buff);
+        int iterations = file_size / buff_size;
         memset(file_size_buff, 0, sizeof(file_size_buff));
         int i;
         FILE *fichier = NULL;
@@ -90,19 +91,17 @@ int main(int argc, char *argv[])
         for (i = 0; i < iterations; i++)
         {
             recvfrom(sock, (char *)to_rcv, 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
-            //char to_write[1024];
-            //strncpy(to_write, to_rcv, 1022);
-            fprintf(fichier, "%s", to_rcv);
-            printf("MSG : %s\n", to_rcv);
+            fwrite(to_rcv, buff_size, 1, fichier);
+            printf("MSG : %d\n", i);
             memset(to_rcv, 0, sizeof(to_rcv));
         }
-        //printf("BEFORE buff \n");
-        char last_to_rcv[buff_size];
-        //printf("BEFORE SENDINg \n");
-        recvfrom(sock, (char *)last_to_rcv, buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
-        fprintf(fichier, "%s", last_to_rcv);
+        char last_to_rcv[file_size - (iterations * buff_size)];
+        printf("%d\n", file_size - (iterations * buff_size));
+        memset(last_to_rcv, 0, sizeof(last_to_rcv));
+        recvfrom(sock, (char *)last_to_rcv, file_size - (iterations * buff_size), MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        printf("%s\n\n", last_to_rcv);
+        fwrite(last_to_rcv, (file_size - (iterations * buff_size)) - 28, 1, fichier);
         fclose(fichier);
-        //printf("after SENDINg \n");
-        printf("MSG : %s\n", last_to_rcv);
+        printf("MSG : %d\n", iterations);
     }
 }

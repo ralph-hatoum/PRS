@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
                 //Opening file + reading
                 int sent_bytes = 0;
-                char file_buffer[1020];
+                //char file_buffer[1020];
                 fichier = fopen("./text.txt", "r");
                 fseek(fichier, 0, SEEK_END);
                 int size = ftell(fichier);
@@ -105,10 +105,10 @@ int main(int argc, char *argv[])
                 printf("Taille fichier %d\n", size);
 
                 // Sending number of iterations
-                char nb_of_it[2];
-                sprintf(nb_of_it, "%d", iterations);
-                sendto(new_socket, (char *)nb_of_it, 2, MSG_WAITALL, (struct sockaddr *)&c_addr, c_addr_size);
-                printf("Sent %s on socket number %d\n", nb_of_it, new_socket);
+                char file_size[1024];
+                sprintf(file_size, "%d", size);
+                sendto(new_socket, (char *)file_size, 1024, MSG_WAITALL, (struct sockaddr *)&c_addr, c_addr_size);
+                printf("Sent %s on socket number %d\n", file_size, new_socket);
 
                 int i;
                 fseek(fichier, 0, SEEK_SET);
@@ -121,18 +121,15 @@ int main(int argc, char *argv[])
                     // Initializing sending buffer
                     char to_send[1024];
                     memset(to_send, 0, sizeof(to_send));
-                    // Adding seq number to the start of the buffer
-                    //sprintf(to_send, "%d", i);
                     // Reading 1020 bytes of the file
                     fread(to_send, 1024, 1, fichier); // MIEUX DE LIRE TOUT LE FICHIER D'UN COUP
-                    // writing these bytes to the buffer to send
-                    //sprintf(to_send + strlen(to_send), "%s", file_buffer);
-                    printf("%s\n\n", to_send);
+                    printf("%d\n\n", i);
                     // sending the buffer
                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                 }
                 //Last buffer needs to be dealt with differently
                 char to_send[size - (iterations)*1024];
+                memset(to_send, 0, sizeof(to_send));
                 // Adding seq number
                 //sprintf(to_send, "%d ", iterations);
                 // Initializing last file buffer to the right size

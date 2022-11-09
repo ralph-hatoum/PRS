@@ -16,4 +16,4 @@ La Seconde Guerre mondiale propulse les États-Unis et l’URSS, principaux vain
 
 L'ampleur des destructions et des morts suscite la création d'instances internationales, politiques et économiques, visant à éviter la réapparition des conditions ayant mené à la guerre (Organisation des Nations unies, Fonds monétaire international, Banque mondiale et Accord général sur les tarifs douaniers et le commerce pour les plus connues). Enfin, ce dernier conflit d'ampleur sur le continent européen est suivi en Europe de l'Ouest par une période de prospérité sans précédent, dans la foulée de la reconstruction, et l'émergence progressive d'un projet d'unification politique pacifique porté en premier lieu par les deux adversaires historiques, l'Allemagne et la France.
 
-Let's try adding some stuff.
+Let's try adding some stuff. Yes ! No it isn't working 
