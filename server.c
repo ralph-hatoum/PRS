@@ -97,11 +97,13 @@ int main(int argc, char *argv[])
                 //Opening file + reading
                 int sent_bytes = 0;
                 //char file_buffer[1020];
-                fichier = fopen("./text.txt", "r");
+
+                // FILE NAME
+                fichier = fopen("./pdf.pdf", "r");
                 fseek(fichier, 0, SEEK_END);
                 int size = ftell(fichier);
                 int iterations = size / 1024;
-                size += 4 * iterations;
+
                 printf("Taille fichier %d\n", size);
 
                 // Sending number of iterations
@@ -123,7 +125,7 @@ int main(int argc, char *argv[])
                     memset(to_send, 0, sizeof(to_send));
                     // Reading 1020 bytes of the file
                     fread(to_send, 1024, 1, fichier); // MIEUX DE LIRE TOUT LE FICHIER D'UN COUP
-                    printf("%d\n\n", i);
+                                                      // printf("%d\n\n", i);
                     // sending the buffer
                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                 }
@@ -138,6 +140,7 @@ int main(int argc, char *argv[])
                 fread(to_send, size - (iterations * 1024), 1, fichier);
                 // Adding last file buffer content to sending buffer
                 //sprintf(to_send + strlen(to_send), "%s", last_file_buffer);
+                printf("%d\n", size - (iterations)*1024);
                 printf("%d\n\n", iterations);
                 printf("%s\n\n", to_send);
                 // sending it

@@ -84,7 +84,9 @@ int main(int argc, char *argv[])
         memset(file_size_buff, 0, sizeof(file_size_buff));
         int i;
         FILE *fichier = NULL;
-        fichier = fopen("./result.txt", "w");
+
+        // FILE NAME
+        fichier = fopen("./result.pdf", "w");
         int n;
         char to_rcv[buff_size];
         memset(to_rcv, 0, sizeof(to_rcv));
@@ -96,11 +98,12 @@ int main(int argc, char *argv[])
             memset(to_rcv, 0, sizeof(to_rcv));
         }
         char last_to_rcv[file_size - (iterations * buff_size)];
+        //char last_to_rcv[1024];
         printf("%d\n", file_size - (iterations * buff_size));
         memset(last_to_rcv, 0, sizeof(last_to_rcv));
         recvfrom(sock, (char *)last_to_rcv, file_size - (iterations * buff_size), MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
         printf("%s\n\n", last_to_rcv);
-        fwrite(last_to_rcv, (file_size - (iterations * buff_size)) - 28, 1, fichier);
+        fwrite(last_to_rcv, file_size - (iterations * buff_size), 1, fichier);
         fclose(fichier);
         printf("MSG : %d\n", iterations);
     }
