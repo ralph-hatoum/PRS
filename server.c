@@ -104,11 +104,11 @@ int main(int argc, char *argv[])
                 size += 4 * iterations;
                 printf("Taille fichier %d\n", size);
 
-                // Sending file size
-                char file_size_buff[9];
-                sprintf(file_size_buff, "%d", size);
-                sendto(new_socket, (char *)file_size_buff, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, c_addr_size);
-                printf("Sent %s on socket number %d\n", file_size_buff, new_socket);
+                // Sending number of iterations
+                char nb_of_it[2];
+                sprintf(nb_of_it, "%d", iterations);
+                sendto(new_socket, (char *)nb_of_it, 2, MSG_WAITALL, (struct sockaddr *)&c_addr, c_addr_size);
+                printf("Sent %s on socket number %d\n", nb_of_it, new_socket);
 
                 int i;
                 fseek(fichier, 0, SEEK_SET);
@@ -120,6 +120,7 @@ int main(int argc, char *argv[])
                     printf("%d\n\n", i);
                     // Initializing sending buffer
                     char to_send[1024];
+                    memset(to_send, 0, sizeof(to_send));
                     // Adding seq number to the start of the buffer
                     //sprintf(to_send, "%d", i);
                     // Reading 1020 bytes of the file

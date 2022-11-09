@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     char to_rcv[buff_size];
     int i;
 
-    FD_ZERO(&f_des);
+    //FD_ZERO(&f_des);
     //FD_SET(sock, &f_des);
     sendto(sock, msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
     printf("Sent ACK\n");
@@ -72,37 +72,34 @@ int main(int argc, char *argv[])
 
         sendto(sock, (char *)msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
         printf("Sent ACK on socket number %d\n", sock);
+
         printf("Connection established ! Waiting for file ... \n");
         char file_size_buff[buff_size];
-        // printf("current buff : %s\n", file_size);
-        //FD_SET(data_sock, &f_des);
-        //select(data_sock + 1, &f_des, NULL, NULL, NULL);
-        recvfrom(sock, (char *)file_size_buff, 9, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        memset(file_size_buff, 0, sizeof(file_size_buff));
+        recvfrom(sock, (char *)file_size_buff, 2, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
 
-        printf("Received file size : %s\n", file_size_buff);
-
-        int file_size = atoi(file_size_buff);
-
-        int iterations = file_size / buff_size;
-
+        printf("Received number of iterations to read : %s\n", file_size_buff);
+        int iterations = atoi(file_size_buff);
+        memset(file_size_buff, 0, sizeof(file_size_buff));
         int i;
         FILE *fichier = NULL;
         fichier = fopen("./result.txt", "w");
         int n;
+        char to_rcv[buff_size];
+        memset(to_rcv, 0, sizeof(to_rcv));
         for (i = 0; i < iterations; i++)
         {
-            char to_rcv[buff_size];
-            printf("Before reading from socket : %s\n", to_rcv);
-            recvfrom(sock, (char *)to_rcv, buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+            recvfrom(sock, (char *)to_rcv, 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
             //char to_write[1024];
-            //strncpy(to_write, to_rcv, 1015);
+            //strncpy(to_write, to_rcv, 1022);
             fprintf(fichier, "%s", to_rcv);
             printf("MSG : %s\n", to_rcv);
+            memset(to_rcv, 0, sizeof(to_rcv));
         }
         //printf("BEFORE buff \n");
-        char last_to_rcv[file_size - iterations * 1024];
+        char last_to_rcv[buff_size];
         //printf("BEFORE SENDINg \n");
-        recvfrom(sock, (char *)last_to_rcv, file_size - iterations * buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        recvfrom(sock, (char *)last_to_rcv, buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
         fprintf(fichier, "%s", last_to_rcv);
         fclose(fichier);
         //printf("after SENDINg \n");
