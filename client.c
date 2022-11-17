@@ -78,13 +78,12 @@ int main(int argc, char *argv[])
         memset(file_size_buff, 0, sizeof(file_size_buff));
         recvfrom(sock, (char *)file_size_buff, buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
 
-        printf("Received number of iterations to read : %s\n", file_size_buff);
+        printf("Received file size: %s\n", file_size_buff);
         int file_size = atoi(file_size_buff);
-        int iterations = file_size / buff_size;
+        int iterations = file_size / (buff_size - 8);
         memset(file_size_buff, 0, sizeof(file_size_buff));
         int i;
         FILE *fichier = NULL;
-
         // FILE NAME
         fichier = fopen("./result.pdf", "w");
         int n;
@@ -93,18 +92,21 @@ int main(int argc, char *argv[])
         for (i = 0; i < iterations; i++)
         {
             recvfrom(sock, (char *)to_rcv, 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
-            fwrite(to_rcv, buff_size, 1, fichier);
-            printf("MSG : %d\n", i);
+            char *seq_number = strtok(to_rcv, " ");
+            // ACK SENDING
+            char ack[10];
+            //sprintf(ack, "ACK_%s", seq_number);
+            //sendto(sock, (char *)ack, 3, 0, (struct sockaddr *)&new_sock, &size_new_sock);
+            printf("ACK sent\n");
+            fwrite(to_rcv + 8, buff_size - 8, 1, fichier);
+            printf("Received segment %s\n", seq_number);
             memset(to_rcv, 0, sizeof(to_rcv));
         }
-        char last_to_rcv[file_size - (iterations * buff_size)];
-        //char last_to_rcv[1024];
-        printf("%d\n", file_size - (iterations * buff_size));
+        char last_to_rcv[file_size - (iterations * (buff_size - 8)) + 8];
         memset(last_to_rcv, 0, sizeof(last_to_rcv));
-        recvfrom(sock, (char *)last_to_rcv, file_size - (iterations * buff_size), MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
-        printf("%s\n\n", last_to_rcv);
-        fwrite(last_to_rcv, file_size - (iterations * buff_size), 1, fichier);
+        recvfrom(sock, (char *)last_to_rcv, file_size - (iterations * (buff_size - 8)) + 8, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        printf("Received segment %s\n\n", last_to_rcv);
+        fwrite(last_to_rcv + 8, file_size - (iterations * (buff_size - 8)), 1, fichier);
         fclose(fichier);
-        printf("MSG : %d\n", iterations);
-    }
+        }
 }

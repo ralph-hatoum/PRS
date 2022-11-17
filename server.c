@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
                 fichier = fopen("./pdf.pdf", "r");
                 fseek(fichier, 0, SEEK_END);
                 int size = ftell(fichier);
-                int iterations = size / 1024;
+                int iterations = size / (1024 - 8);
 
                 printf("Taille fichier %d\n", size);
 
@@ -119,25 +119,102 @@ int main(int argc, char *argv[])
 
                 for (i = 0; i < iterations; i++)
                 {
-                    printf("%d\n\n", i);
+                    int no_ack_flag = 0;
+                    //printf("%d\n\n", i);
                     // Initializing sending buffer
                     char to_send[1024];
+                    char seq_number[8];
+                    memset(seq_number, 0, sizeof(seq_number));
+                    // ADDING SEQ NUMBER
+                    if (i < 10)
+                    {
+                        sprintf(seq_number, "00000%d ", i);
+                        printf("%s\n", seq_number);
+                    }
+                    else if (i < 100)
+                    {
+                        sprintf(seq_number, "0000%d ", i);
+                        printf("%s\n", seq_number);
+                    }
+                    else if (i < 1000)
+                    {
+                        sprintf(seq_number, "000%d ", i);
+                        printf("%s\n", seq_number);
+                    }
+                    else if (i < 10000)
+                    {
+                        sprintf(seq_number, "00%d ", i);
+                        printf("%s\n", seq_number);
+                    }
+                    else if (i < 100000)
+                    {
+                        sprintf(seq_number, "0%d ", i);
+                        printf("%s\n", seq_number);
+                    }
+                    else
+                    {
+                        sprintf(seq_number, "%d ", i);
+                        printf("%s\n", seq_number);
+                    }
+
                     memset(to_send, 0, sizeof(to_send));
+                    sprintf(to_send, "%s", seq_number);
                     // Reading 1020 bytes of the file
-                    fread(to_send, 1024, 1, fichier); // MIEUX DE LIRE TOUT LE FICHIER D'UN COUP
-                                                      // printf("%d\n\n", i);
+                    fread(to_send + 8, 1024 - 8, 1, fichier); // MIEUX DE LIRE TOUT LE FICHIER D'UN COUP
+                                                              // printf("%d\n\n", i);
                     // sending the buffer
                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+                    // Waiting for ACK
+                    //char ack_buff[3];
+                    //recvfrom(new_socket, (char *)ack_buff, 3, 0, (struct sockaddr *)&c_addr, &c_addr_size);
+                    //if (strcmp(ack_buff, "ACK") == 0)
+                    //{
+                    //   printf("%s\n\n", ack_buff);
+                    //}
                 }
                 //Last buffer needs to be dealt with differently
-                char to_send[size - (iterations)*1024];
+                char to_send[size - (iterations) * (1024 - 8)];
                 memset(to_send, 0, sizeof(to_send));
+                char seq_number[8];
+                memset(seq_number, 0, sizeof(seq_number));
+
+                if (iterations < 10)
+                {
+                    sprintf(seq_number, "00000%d ", i);
+                    printf("%s\n", seq_number);
+                }
+                else if (iterations < 100)
+                {
+                    sprintf(seq_number, "0000%d ", i);
+                    printf("%s\n", seq_number);
+                }
+                else if (iterations < 1000)
+                {
+                    sprintf(seq_number, "000%d ", i);
+                    printf("%s\n", seq_number);
+                }
+                else if (iterations < 10000)
+                {
+                    sprintf(seq_number, "00%d ", i);
+                    printf("%s\n", seq_number);
+                }
+                else if (iterations < 100000)
+                {
+                    sprintf(seq_number, "0%d ", i);
+                    printf("%s\n", seq_number);
+                }
+                else
+                {
+                    sprintf(seq_number, "%d ", i);
+                    printf("%s\n", seq_number);
+                }
+                sprintf(to_send, "%s", seq_number);
                 // Adding seq number
                 //sprintf(to_send, "%d ", iterations);
                 // Initializing last file buffer to the right size
                 //char last_file_buffer[size - (iterations)*1020];
                 // Reading from file into last file buffer
-                fread(to_send, size - (iterations * 1024), 1, fichier);
+                fread(to_send + 8, size - (iterations * (1024 - 8)), 1, fichier);
                 // Adding last file buffer content to sending buffer
                 //sprintf(to_send + strlen(to_send), "%s", last_file_buffer);
                 printf("%d\n", size - (iterations)*1024);
