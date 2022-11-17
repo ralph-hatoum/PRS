@@ -50,12 +50,12 @@ int main(int argc, char *argv[])
     char *port_to_contact = strtok(NULL, " ");
     if (strcmp(buff_to_compare, "SYNACK") == 0)
     {
-        //int data_sock;
-        //data_sock = socket(AF_INET, SOCK_DGRAM, 0);
-        /*if (data_sock < 0)
+        int data_sock;
+        data_sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (data_sock < 0)
         {
             exit(1);
-        }*/
+        }
         int new_port = atoi(port_to_contact);
         printf("%d\n", new_port);
         char msg[buff_size] = "ACK";
@@ -68,15 +68,16 @@ int main(int argc, char *argv[])
         new_sock.sin_addr.s_addr = htonl(new_sock.sin_addr.s_addr);
         uint size_new_sock = sizeof(new_sock);
 
-        //bind(data_sock, (struct sockaddr *)&new_sock, sizeof(new_sock));
+        bind(data_sock, (struct sockaddr *)&new_sock, sizeof(new_sock));
 
         sendto(sock, (char *)msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
         printf("Sent ACK on socket number %d\n", sock);
 
         printf("Connection established ! Waiting for file ... \n");
+        printf("Now listening on socket %d\n", data_sock);
         char file_size_buff[buff_size];
         memset(file_size_buff, 0, sizeof(file_size_buff));
-        recvfrom(sock, (char *)file_size_buff, buff_size, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        recvfrom(data_sock, (char *)file_size_buff, buff_size, 0, (struct sockaddr *)&new_sock, &size_new_sock);
 
         printf("Received file size: %s\n", file_size_buff);
         int file_size = atoi(file_size_buff);
@@ -91,22 +92,26 @@ int main(int argc, char *argv[])
         memset(to_rcv, 0, sizeof(to_rcv));
         for (i = 0; i < iterations; i++)
         {
-            recvfrom(sock, (char *)to_rcv, 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+            recvfrom(data_sock, (char *)to_rcv, 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
             char *seq_number = strtok(to_rcv, " ");
             // ACK SENDING
-            char ack[10];
-            //sprintf(ack, "ACK_%s", seq_number);
-            //sendto(sock, (char *)ack, 3, 0, (struct sockaddr *)&new_sock, &size_new_sock);
+            printf("Received segment number %s\n", seq_number);
+            char ack[1024];
+            sprintf(ack, "ACK_%s", seq_number);
+            printf("%s\n", ack);
+            sendto(data_sock, ack, 1024, 0, (struct sockaddr *)&new_sock, &size_new_sock);
             printf("ACK sent\n");
             fwrite(to_rcv + 8, buff_size - 8, 1, fichier);
-            printf("Received segment %s\n", seq_number);
             memset(to_rcv, 0, sizeof(to_rcv));
         }
         char last_to_rcv[file_size - (iterations * (buff_size - 8)) + 8];
         memset(last_to_rcv, 0, sizeof(last_to_rcv));
-        recvfrom(sock, (char *)last_to_rcv, file_size - (iterations * (buff_size - 8)) + 8, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
-        printf("Received segment %s\n\n", last_to_rcv);
+        recvfrom(data_sock, (char *)last_to_rcv, file_size - (iterations * (buff_size - 8)) + 8, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        char *seq_number = strtok(to_rcv, " ");
+        char ack[10];
+        sprintf(ack, "ACK_%s", seq_number);
+        sendto(data_sock, ack, 12, 0, (struct sockaddr *)&new_sock, &size_new_sock);
         fwrite(last_to_rcv + 8, file_size - (iterations * (buff_size - 8)), 1, fichier);
         fclose(fichier);
-        }
+    }
 }

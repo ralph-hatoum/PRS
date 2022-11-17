@@ -116,7 +116,8 @@ int main(int argc, char *argv[])
                 fseek(fichier, 0, SEEK_SET);
                 // Envoi du fichier
                 printf("Sending file on socket number %d\n", new_socket);
-
+                char ack_buff[1024];
+                char expected_ack[12];
                 for (i = 0; i < iterations; i++)
                 {
                     int no_ack_flag = 0;
@@ -129,48 +130,53 @@ int main(int argc, char *argv[])
                     if (i < 10)
                     {
                         sprintf(seq_number, "00000%d ", i);
-                        printf("%s\n", seq_number);
+                        // printf("%s\n", seq_number);
                     }
                     else if (i < 100)
                     {
                         sprintf(seq_number, "0000%d ", i);
-                        printf("%s\n", seq_number);
+                        // printf("%s\n", seq_number);
                     }
                     else if (i < 1000)
                     {
                         sprintf(seq_number, "000%d ", i);
-                        printf("%s\n", seq_number);
+                        //printf("%s\n", seq_number);
                     }
                     else if (i < 10000)
                     {
                         sprintf(seq_number, "00%d ", i);
-                        printf("%s\n", seq_number);
+                        //printf("%s\n", seq_number);
                     }
                     else if (i < 100000)
                     {
                         sprintf(seq_number, "0%d ", i);
-                        printf("%s\n", seq_number);
+                        //printf("%s\n", seq_number);
                     }
                     else
                     {
                         sprintf(seq_number, "%d ", i);
-                        printf("%s\n", seq_number);
+                        //printf("%s\n", seq_number);
                     }
-
+                    sprintf(expected_ack, "ACK_%s", seq_number);
                     memset(to_send, 0, sizeof(to_send));
                     sprintf(to_send, "%s", seq_number);
-                    // Reading 1020 bytes of the file
+                    // Reading bytes of the file
                     fread(to_send + 8, 1024 - 8, 1, fichier); // MIEUX DE LIRE TOUT LE FICHIER D'UN COUP
-                                                              // printf("%d\n\n", i);
+
                     // sending the buffer
                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+                    printf("Sent segment %s ; awaiting %s\n", seq_number, expected_ack);
                     // Waiting for ACK
-                    //char ack_buff[3];
-                    //recvfrom(new_socket, (char *)ack_buff, 3, 0, (struct sockaddr *)&c_addr, &c_addr_size);
-                    //if (strcmp(ack_buff, "ACK") == 0)
-                    //{
-                    //   printf("%s\n\n", ack_buff);
-                    //}
+
+                    memset(ack_buff, 0, sizeof(ack_buff));
+                    printf("Right before recvfrom\n");
+                    recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
+                    printf("Right after recvfrom\n");
+                    printf("%s\n", ack_buff);
+                    if (strcmp(ack_buff, expected_ack) == 0)
+                    {
+                        printf("%s\n\n", ack_buff);
+                    }
                 }
                 //Last buffer needs to be dealt with differently
                 char to_send[size - (iterations) * (1024 - 8)];
