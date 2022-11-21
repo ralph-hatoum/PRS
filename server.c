@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    // Initialisation de variables
+    // Initialisation variables pour la socket udp
     int udp_sock;
     int reuse = 1;
     struct sockaddr_in my_addr_udp;
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
         char msg_udp[9];
         recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
         printf("Message on UDP socket : %s\n", msg_udp);
-
+        // Three way handshake ici
         if (strcmp(msg_udp, "SYN") == 0)
         {
             // On est ici si le message reçu est un SYN
@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
                 printf("New udp socket failed");
                 exit(-1);
             }
+            // Nouveau port pour la nouvelle socket : ancien port + 1
             int new_port = atoi(argv[1]) + 1;
             struct sockaddr_in addr_new_sock;
             memset((char *)&addr_new_sock, 0, sizeof(addr_new_sock));
@@ -130,33 +131,28 @@ int main(int argc, char *argv[])
                     if (i < 10)
                     {
                         sprintf(seq_number, "00000%d ", i);
-                        // printf("%s\n", seq_number);
                     }
                     else if (i < 100)
                     {
                         sprintf(seq_number, "0000%d ", i);
-                        // printf("%s\n", seq_number);
                     }
                     else if (i < 1000)
                     {
                         sprintf(seq_number, "000%d ", i);
-                        //printf("%s\n", seq_number);
                     }
                     else if (i < 10000)
                     {
                         sprintf(seq_number, "00%d ", i);
-                        //printf("%s\n", seq_number);
                     }
                     else if (i < 100000)
                     {
                         sprintf(seq_number, "0%d ", i);
-                        //printf("%s\n", seq_number);
                     }
                     else
                     {
                         sprintf(seq_number, "%d ", i);
-                        //printf("%s\n", seq_number);
                     }
+
                     sprintf(expected_ack, "ACK_%s", seq_number);
                     memset(to_send, 0, sizeof(to_send));
                     sprintf(to_send, "%s", seq_number);
@@ -166,8 +162,8 @@ int main(int argc, char *argv[])
                     // sending the buffer
                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                     printf("Sent segment %s ; awaiting %s\n", seq_number, expected_ack);
-                    // Waiting for ACK
 
+                                        // Waiting for ACK
                     memset(ack_buff, 0, sizeof(ack_buff));
                     printf("Right before recvfrom\n");
                     recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
