@@ -122,7 +122,6 @@ int main(int argc, char *argv[])
                 for (i = 0; i < iterations; i++)
                 {
                     int no_ack_flag = 0;
-                    //printf("%d\n\n", i);
                     // Initializing sending buffer
                     char to_send[1024];
                     char seq_number[8];
@@ -163,15 +162,16 @@ int main(int argc, char *argv[])
                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                     printf("Sent segment %s ; awaiting %s\n", seq_number, expected_ack);
 
-                                        // Waiting for ACK
+                    // Waiting for ACK
                     memset(ack_buff, 0, sizeof(ack_buff));
-                    printf("Right before recvfrom\n");
                     recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
-                    printf("Right after recvfrom\n");
-                    printf("%s\n", ack_buff);
                     if (strcmp(ack_buff, expected_ack) == 0)
                     {
                         printf("%s\n\n", ack_buff);
+                    }
+                    else
+                    {
+                        printf("Lost packet \n");
                     }
                 }
                 //Last buffer needs to be dealt with differently

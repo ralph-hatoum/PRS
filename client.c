@@ -21,6 +21,8 @@ int main(int argc, char *argv[])
 
     // Initializing socket
     sock = socket(AF_INET, SOCK_DGRAM, 0);
+    int option = 1;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
     // Error handling
     if (sock < 0)
     {
@@ -33,12 +35,14 @@ int main(int argc, char *argv[])
     my_addr.sin_addr.s_addr = htonl(my_addr.sin_addr.s_addr);
     uint taille = sizeof(my_addr);
 
+    bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
+
     char msg[buff_size] = "SYN";
     char to_rcv[buff_size];
     int i;
 
     // Sending SYN
-    sendto(sock, msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
+    sendto(sock, msg, buff_size, 0, (struct sockaddr *)&my_addr, sizeof(my_addr));
     printf("Sent SYN\n");
 
     // Waiting for SYNACK
@@ -53,6 +57,16 @@ int main(int argc, char *argv[])
         // Here if synack was received ; creating new socket
         int data_sock;
         data_sock = socket(AF_INET, SOCK_DGRAM, 0);
+        int succ;
+        succ = setsockopt(data_sock, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+        if (succ != 0)
+        {
+            perror("Couldnt set sock opt : ");
+        }
+        else
+        {
+            printf("Set sockopt ok ... \n");
+        }
         if (data_sock < 0)
         {
             exit(1);
@@ -63,6 +77,13 @@ int main(int argc, char *argv[])
         printf("%d\n", new_port);
         char msg[buff_size] = "ACK";
 
+        // On old socket, ACK should be sent to finish 3 way handshake
+        sendto(sock, (char *)msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
+        printf("Sent ACK on socket number %d\n", sock);
+        printf("Connection established ! Waiting for file ... \n");
+
+        close(sock);
+        memset((char *)&my_addr, 0, sizeof(my_addr));
         struct sockaddr_in new_sock;
         memset((char *)&new_sock, 0, sizeof(new_sock));
         new_sock.sin_family = AF_INET;
@@ -71,12 +92,15 @@ int main(int argc, char *argv[])
         new_sock.sin_addr.s_addr = htonl(new_sock.sin_addr.s_addr);
         uint size_new_sock = sizeof(new_sock);
 
-        bind(data_sock, (struct sockaddr *)&new_sock, sizeof(new_sock));
+        // PROBLEME ICI - IMPOSSIBLE DE BIND LA NOUVELLE SOCKET - ERREUR : Address already in use
+        int bind_success;
+        bind_success = bind(data_sock, (struct sockaddr *)&new_sock, size_new_sock);
 
-        // On old socket, ACK should be sent to finish 3 way handshake
-        sendto(sock, (char *)msg, buff_size, 0, (struct sockaddr *)&my_addr, taille);
-        printf("Sent ACK on socket number %d\n", sock);
-        printf("Connection established ! Waiting for file ... \n");
+        if (bind_success != 0)
+        {
+            perror("Error while binding new socekt");
+        }
+
         printf("Now listening on socket %d\n", data_sock);
 
         // Receiving file size
@@ -111,7 +135,7 @@ int main(int argc, char *argv[])
             char ack[1024];
             sprintf(ack, "ACK_%s", seq_number);
             printf("%s\n", ack);
-            sendto(data_sock, ack, 1024, 0, (struct sockaddr *)&new_sock, &size_new_sock);
+            sendto(data_sock, ack, 1024, 0, (struct sockaddr *)&new_sock, sizeof(new_sock));
             printf("ACK sent\n");
 
             // Writing segment in the file
@@ -126,7 +150,7 @@ int main(int argc, char *argv[])
         // Sending last ACK
         char ack[10];
         sprintf(ack, "ACK_%s", seq_number);
-        sendto(data_sock, ack, 12, 0, (struct sockaddr *)&new_sock, &size_new_sock);
+        sendto(data_sock, ack, 12, 0, (struct sockaddr *)&new_sock, sizeof(new_sock));
 
         //Writing last segment and closing the file
         fwrite(last_to_rcv + 8, file_size - (iterations * (buff_size - 8)), 1, fichier);
