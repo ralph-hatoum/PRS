@@ -98,7 +98,15 @@ int main(int argc, char *argv[])
 
             // Sending ACK
             char ack[1024];
+            //if (i == 20)
+            //{
+            // sprintf(ack, "ACK_000019");
+            // }
+            // else
+            //{
             sprintf(ack, "ACK_%s", seq_number);
+            //}
+
             printf("%s\n", ack);
             sendto(sock, ack, 1024, 0, (struct sockaddr *)&my_addr, sizeof(my_addr));
             printf("ACK sent\n");
