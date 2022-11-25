@@ -113,13 +113,13 @@ int main(int argc, char *argv[])
                 sendto(new_socket, (char *)file_size, 1024, MSG_WAITALL, (struct sockaddr *)&c_addr, c_addr_size);
                 printf("Sent %s on socket number %d\n", file_size, new_socket);
 
-                int i;
+                int i = 0;
                 fseek(fichier, 0, SEEK_SET);
                 // Envoi du fichier
                 printf("Sending file on socket number %d\n", new_socket);
                 char ack_buff[1024];
                 char expected_ack[12];
-                for (i = 0; i < iterations; i++)
+                while (i < iterations)
                 {
                     int no_ack_flag = 0;
                     // Initializing sending buffer
@@ -165,7 +165,19 @@ int main(int argc, char *argv[])
                     // Waiting for ACK
                     memset(ack_buff, 0, sizeof(ack_buff));
                     recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
-                    printf("Received : %s\n\n", ack_buff);
+                    printf("Received : %s, expected %s\n\n", ack_buff, expected_ack);
+
+                    if (strncmp(expected_ack, ack_buff, 10) == 0)
+                    {
+                        printf("ACK OK - next segment\n");
+                        i += 1;
+                        printf("Preparing to send segment number %d\n", i);
+                    }
+                    else
+                    {
+                        printf("Segment lost - retransmission needed\n");
+                        printf("Preparing to re-send segment number %d\n", i);
+                    }
                 }
                 //Last buffer needs to be dealt with differently
                 char to_send[size - (iterations) * (1024 - 8)];
