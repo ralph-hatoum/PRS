@@ -54,23 +54,7 @@ int main(int argc, char *argv[])
     char *port_to_contact = strtok(NULL, " ");
     if (strcmp(buff_to_compare, "SYNACK") == 0)
     {
-        // Here if synack was received ; creating new socket
-        int data_sock;
-        data_sock = socket(AF_INET, SOCK_DGRAM, 0);
-        int succ;
-        succ = setsockopt(data_sock, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
-        if (succ != 0)
-        {
-            perror("Couldnt set sock opt : ");
-        }
-        else
-        {
-            printf("Set sockopt ok ... \n");
-        }
-        if (data_sock < 0)
-        {
-            exit(1);
-        }
+        // Here if synack was received ; changing port to the port the server just sent
 
         //Socket should be addressed on the new port received
         int new_port = atoi(port_to_contact);
@@ -82,31 +66,12 @@ int main(int argc, char *argv[])
         printf("Sent ACK on socket number %d\n", sock);
         printf("Connection established ! Waiting for file ... \n");
 
-        close(sock);
-        memset((char *)&my_addr, 0, sizeof(my_addr));
-        struct sockaddr_in new_sock;
-        memset((char *)&new_sock, 0, sizeof(new_sock));
-        new_sock.sin_family = AF_INET;
-        new_sock.sin_port = htons(new_port);
-        inet_aton(argv[1], &new_sock.sin_addr);
-        new_sock.sin_addr.s_addr = htonl(new_sock.sin_addr.s_addr);
-        uint size_new_sock = sizeof(new_sock);
-
-        // PROBLEME ICI - IMPOSSIBLE DE BIND LA NOUVELLE SOCKET - ERREUR : Address already in use
-        int bind_success;
-        bind_success = bind(data_sock, (struct sockaddr *)&new_sock, size_new_sock);
-
-        if (bind_success != 0)
-        {
-            perror("Error while binding new socekt");
-        }
-
-        printf("Now listening on socket %d\n", data_sock);
+        my_addr.sin_port = htons(new_port);
 
         // Receiving file size
         char file_size_buff[buff_size];
         memset(file_size_buff, 0, sizeof(file_size_buff));
-        recvfrom(data_sock, (char *)file_size_buff, buff_size, 0, (struct sockaddr *)&new_sock, &size_new_sock);
+        recvfrom(sock, (char *)file_size_buff, buff_size, 0, (struct sockaddr *)&my_addr, &taille);
         printf("Received file size: %s\n", file_size_buff);
 
         // with file size, compute number of segments to be received
@@ -127,7 +92,7 @@ int main(int argc, char *argv[])
         for (i = 0; i < iterations; i++)
         {
             // Receive segment and extracting seq number
-            recvfrom(data_sock, (char *)to_rcv, 1024, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+            recvfrom(sock, (char *)to_rcv, 1024, MSG_WAITALL, (struct sockaddr *)&my_addr, &taille);
             char *seq_number = strtok(to_rcv, " ");
             printf("Received segment number %s\n", seq_number);
 
@@ -135,7 +100,7 @@ int main(int argc, char *argv[])
             char ack[1024];
             sprintf(ack, "ACK_%s", seq_number);
             printf("%s\n", ack);
-            sendto(data_sock, ack, 1024, 0, (struct sockaddr *)&new_sock, sizeof(new_sock));
+            sendto(sock, ack, 1024, 0, (struct sockaddr *)&my_addr, sizeof(my_addr));
             printf("ACK sent\n");
 
             // Writing segment in the file
@@ -145,15 +110,17 @@ int main(int argc, char *argv[])
         // Last segment is dealt with differently
         char last_to_rcv[file_size - (iterations * (buff_size - 8)) + 8];
         memset(last_to_rcv, 0, sizeof(last_to_rcv));
-        recvfrom(data_sock, (char *)last_to_rcv, file_size - (iterations * (buff_size - 8)) + 8, MSG_WAITALL, (struct sockaddr *)&new_sock, &size_new_sock);
+        recvfrom(sock, (char *)last_to_rcv, file_size - (iterations * (buff_size - 8)) + 8, MSG_WAITALL, (struct sockaddr *)&my_addr, &taille);
         char *seq_number = strtok(to_rcv, " ");
         // Sending last ACK
-        char ack[10];
+        char ack[1024];
         sprintf(ack, "ACK_%s", seq_number);
-        sendto(data_sock, ack, 12, 0, (struct sockaddr *)&new_sock, sizeof(new_sock));
+        sendto(sock, ack, 1024, 0, (struct sockaddr *)&my_addr, sizeof(my_addr));
 
         //Writing last segment and closing the file
         fwrite(last_to_rcv + 8, file_size - (iterations * (buff_size - 8)), 1, fichier);
         fclose(fichier);
+
+        printf("File successfully saved ! \n");
     }
 }

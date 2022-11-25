@@ -165,14 +165,7 @@ int main(int argc, char *argv[])
                     // Waiting for ACK
                     memset(ack_buff, 0, sizeof(ack_buff));
                     recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
-                    if (strcmp(ack_buff, expected_ack) == 0)
-                    {
-                        printf("%s\n\n", ack_buff);
-                    }
-                    else
-                    {
-                        printf("Lost packet \n");
-                    }
+                    printf("Received : %s\n\n", ack_buff);
                 }
                 //Last buffer needs to be dealt with differently
                 char to_send[size - (iterations) * (1024 - 8)];
