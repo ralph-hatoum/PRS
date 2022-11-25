@@ -177,6 +177,9 @@ int main(int argc, char *argv[])
                     {
                         printf("Segment lost - retransmission needed\n");
                         printf("Preparing to re-send segment number %d\n", i);
+                        char *to_throw = strtok(ack_buff, "_");
+                        char *current_ack = strtok(NULL, "_");
+                        printf("Everything received until segment number %s", current_ack);
                     }
                 }
                 //Last buffer needs to be dealt with differently
