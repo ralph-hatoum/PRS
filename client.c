@@ -78,7 +78,6 @@ int main(int argc, char *argv[])
         int file_size = atoi(file_size_buff);
         int iterations = file_size / (buff_size - 8);
         memset(file_size_buff, 0, sizeof(file_size_buff));
-        int i;
 
         //Create new file to store result in
         FILE *fichier = NULL;
@@ -87,33 +86,44 @@ int main(int argc, char *argv[])
         int n;
         char to_rcv[buff_size];
         memset(to_rcv, 0, sizeof(to_rcv));
-
+        int i = 0;
+        int last_segment_received = i;
         // Receiving and sending acks
-        for (i = 0; i < iterations; i++)
+        while (i < iterations)
         {
             // Receive segment and extracting seq number
             recvfrom(sock, (char *)to_rcv, 1024, MSG_WAITALL, (struct sockaddr *)&my_addr, &taille);
             char *seq_number = strtok(to_rcv, " ");
-            printf("Received segment number %s\n", seq_number);
+            last_segment_received = atoi(seq_number);
+            printf("Received segment number %d\n", last_segment_received);
 
             // Sending ACK
             char ack[1024];
-            //if (i == 20)
-            //{
-            // sprintf(ack, "ACK_000019");
-            // }
-            // else
-            //{
-            sprintf(ack, "ACK_%s", seq_number);
-            //}
+            if (i == 20)
+            {
+                sprintf(ack, "ACK_000019");
+            }
+            else
+            {
+                sprintf(ack, "ACK_%s", seq_number);
+            }
 
             printf("%s\n", ack);
             sendto(sock, ack, 1024, 0, (struct sockaddr *)&my_addr, sizeof(my_addr));
             printf("ACK sent\n");
 
-            // Writing segment in the file
-            fwrite(to_rcv + 8, buff_size - 8, 1, fichier);
-            memset(to_rcv, 0, sizeof(to_rcv));
+            if (last_segment_received == i)
+            {
+                // Writing segment in the file
+                fwrite(to_rcv + 8, buff_size - 8, 1, fichier);
+                memset(to_rcv, 0, sizeof(to_rcv));
+                i += 1;
+            }
+            else
+            {
+                printf("Received segment %d\n", last_segment_received);
+                printf("Already received it / not looking to receive it now - ignoring \n");
+            }
         }
         // Last segment is dealt with differently
         char last_to_rcv[file_size - (iterations * (buff_size - 8)) + 8];
