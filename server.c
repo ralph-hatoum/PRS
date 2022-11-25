@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
             //Renvoi du SYNACK+nouveau port de connexion
             char SYNACK[1024];
-            snprintf(SYNACK, 1024, "SYNACK %d", new_port);
+            snprintf(SYNACK, 1024, "SYNACK-%d", new_port);
             printf("%s\n", SYNACK);
             sendto(udp_sock, SYNACK, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
 
