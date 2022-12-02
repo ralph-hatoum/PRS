@@ -117,13 +117,14 @@ int main(int argc, char *argv[])
                 printf("Sending file on socket number %d\n", new_socket);
                 char ack_buff[1024];
                 char expected_ack[12];
+                int expected_ack_number = 0;
+                char to_send[1024];
                 while (i <= cpt + 1)
                 {
                     for (int k = 0; k < 3; k++)
                     {
 
                         // Initializing sending buffer
-                        char to_send[1024];
                         char seq_number[8];
                         memset(seq_number, 0, sizeof(seq_number));
                         // ADDING SEQ NUMBER
@@ -153,6 +154,7 @@ int main(int argc, char *argv[])
                         }
 
                         sprintf(expected_ack, "ACK%s", seq_number);
+                        expected_ack_number = i;
                         memset(to_send, 0, sizeof(to_send));
                         sprintf(to_send, "%s", seq_number);
                         // Reading bytes of the file
@@ -189,22 +191,15 @@ int main(int argc, char *argv[])
                         recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
                         //printf("Received : %s, expected %s\n\n", ack_buff, expected_ack);
 
-                        if (strncmp(expected_ack, ack_buff, 9) == 0)
+                        while (strncmp(expected_ack, ack_buff, 9) != 0)
                         {
-                            //printf("ACK OK - next segment\n");
-                            i += 1;
-                            //printf("Preparing to send segment number %d\n", i);
-                        }
-                        else
-                        {
-                            printf("Segment lost\n");
-                            printf("%s\n", ack_buff);
                             char ack_number[6];
                             memcpy(&ack_number, &ack_buff[6], 6);
                             int ack_num_int;
                             ack_num_int = atoi(ack_number);
                             printf("Ack number :%d ", ack_num_int);
-                            if (ack_num_int <= i - 3)
+
+                            if (ack_num_int != expected_ack_number - 1 && ack_num_int != expected_ack_number - 2)
                             {
                                 char to_send[1024];
                                 sprintf(to_send, "%s", ack_number);
@@ -222,18 +217,22 @@ int main(int argc, char *argv[])
                                 printf("Resent packet %d\n", ack_num_int);
                                 i = ack_num_int;
                             }
-                            else
-                            {
-                                printf("No need to resend %d - just a duplicate ack \n", ack_num_int);
-                            }
-
-                            //printf("Everything received until segment number %s\n", current_ack);
-                            //printf("Preparing to re-send segment number %d\n", i);
                         }
+                        i += 1;
                     }
                     else
                     {
-                        //printf("Timed out ; preparing to send previous segment\n");
+
+                        if (i + 1 == cpt + 1 && (size - cpt * (1024 - 6)) > 0)
+                        {
+                            sendto(new_socket, to_send, size - cpt * (1024 - 6) + 5, 0, (struct sockaddr *)&c_addr, c_addr_size); //size-cpt*(1024-6)+6-1
+                        }
+                        else
+                        {
+
+                            sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+                        }
+                        printf("Resent packet %d\n", i);
                     }
                 }
 
