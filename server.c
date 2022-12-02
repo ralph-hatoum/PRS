@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
                         }
                         else
                         {
-                            printf("Segment lost - retransmission needed\n");
+                            printf("Segment lost\n");
                             printf("%s\n", ack_buff);
                             char ack_number[6];
                             memcpy(&ack_number, &ack_buff[6], 6);
@@ -219,6 +219,11 @@ int main(int argc, char *argv[])
                                     memcpy(&to_send[6], &BuFichier[(ack_num_int + 1 - 1) * (1024 - 6)], (1024 - 6));
                                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                                 }
+                                printf("Resent packet %d\n", ack_num_int);
+                            }
+                            else
+                            {
+                                printf("No need to resend %d - just a duplicate ack \n", ack_num_int);
                             }
 
                             //printf("Everything received until segment number %s\n", current_ack);
