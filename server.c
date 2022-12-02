@@ -220,6 +220,7 @@ int main(int argc, char *argv[])
                                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                                 }
                                 printf("Resent packet %d\n", ack_num_int);
+                                i = ack_num_int;
                             }
                             else
                             {
