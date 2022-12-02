@@ -9,9 +9,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-
 int main(int argc, char *argv[])
-{	
+{
     // On vérifie que le port du serveur est bien fourni en argument
     if (argc != 2)
     {
@@ -93,123 +92,134 @@ int main(int argc, char *argv[])
             {
                 // Si on reçoit un ack, connexion établie, on peut communiquer sur la nouvelle socket
                 printf("Received : %s from socket number %d, connection established !!!\n", msg_udp, udp_sock);
-				
-				char Buffilename[100];
+
+                char Buffilename[100];
                 recvfrom(new_socket, (char *)Buffilename, 1024, MSG_WAITALL, (struct sockaddr *)&addr_new_sock, &addr_new_sock_len);
-				char *filename = strtok(Buffilename, " ");
-				
+                char *filename = strtok(Buffilename, " ");
+
                 printf("Received file name : %s\n", filename);
-    			
-    			FILE* fichier = fopen(filename, "r");
 
-				fseek(fichier, 0, SEEK_END); // seek to end of file
-				int size = ftell(fichier)+1; // get current file pointer
-				fseek(fichier, 0, SEEK_SET);
-				printf("taille %d\n", size);
-				int cpt = size/(1024-6);//6 car 6 digits de num plus espace
-				printf("taille %d\n", cpt);
-				char BuFichier[size];
+                FILE *fichier = fopen(filename, "r");
 
-				fread(BuFichier,size-1,1,fichier);
+                fseek(fichier, 0, SEEK_END);   // seek to end of file
+                int size = ftell(fichier) + 1; // get current file pointer
+                fseek(fichier, 0, SEEK_SET);
+                printf("taille %d\n", size);
+                int cpt = size / (1024 - 6); //6 car 6 digits de num plus espace
+                printf("taille %d\n", cpt);
+                char BuFichier[size];
 
+                fread(BuFichier, size - 1, 1, fichier);
 
-              int i = 1;
+                int i = 1;
                 fseek(fichier, 0, SEEK_SET);
                 // Envoi du fichier
                 printf("Sending file on socket number %d\n", new_socket);
                 char ack_buff[1024];
                 char expected_ack[12];
-                while (i <= cpt+1)
+                while (i <= cpt + 1)
                 {
-                    for (int k=0;k<3;k++){
-                    
-                    // Initializing sending buffer
-                    char to_send[1024];
-                    char seq_number[8];
-                    memset(seq_number, 0, sizeof(seq_number));
-                    // ADDING SEQ NUMBER
-                    if (i < 10)
+                    for (int k = 0; k < 3; k++)
                     {
-                        sprintf(seq_number, "00000%d ", i);
-                    }
-                    else if (i < 100)
-                    {
-                        sprintf(seq_number, "0000%d ", i);
-                    }
-                    else if (i < 1000)
-                    {
-                        sprintf(seq_number, "000%d ", i);
-                    }
-                    else if (i < 10000)
-                    {
-                        sprintf(seq_number, "00%d ", i);
-                    }
-                    else if (i < 100000)
-                    {
-                        sprintf(seq_number, "0%d ", i);
-                    }
-                    else
-                    {
-                        sprintf(seq_number, "%d ", i);
-                    }
 
-                    sprintf(expected_ack, "ACK%s", seq_number);
-                    memset(to_send, 0, sizeof(to_send));
-                    sprintf(to_send, "%s", seq_number);
-                    // Reading bytes of the file
-                    
-                    if (i == cpt+1 && (size-cpt*(1024-6))>0){
-                    	memcpy(&to_send[6], &BuFichier[(i-1)*(1024-6)], size-cpt*(1024-6));
-                    	sendto(new_socket, to_send, size-cpt*(1024-6)+5, 0, (struct sockaddr *)&c_addr, c_addr_size);//size-cpt*(1024-6)+6-1
-                    }else{
-                    	memcpy(&to_send[6], &BuFichier[(i-1)*(1024-6)],(1024-6));
-                    	sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
-                    }
-                    i+=1;
+                        // Initializing sending buffer
+                        char to_send[1024];
+                        char seq_number[8];
+                        memset(seq_number, 0, sizeof(seq_number));
+                        // ADDING SEQ NUMBER
+                        if (i < 10)
+                        {
+                            sprintf(seq_number, "00000%d ", i);
+                        }
+                        else if (i < 100)
+                        {
+                            sprintf(seq_number, "0000%d ", i);
+                        }
+                        else if (i < 1000)
+                        {
+                            sprintf(seq_number, "000%d ", i);
+                        }
+                        else if (i < 10000)
+                        {
+                            sprintf(seq_number, "00%d ", i);
+                        }
+                        else if (i < 100000)
+                        {
+                            sprintf(seq_number, "0%d ", i);
+                        }
+                        else
+                        {
+                            sprintf(seq_number, "%d ", i);
+                        }
+
+                        sprintf(expected_ack, "ACK%s", seq_number);
+                        memset(to_send, 0, sizeof(to_send));
+                        sprintf(to_send, "%s", seq_number);
+                        // Reading bytes of the file
+
+                        if (i == cpt + 1 && (size - cpt * (1024 - 6)) > 0)
+                        {
+                            memcpy(&to_send[6], &BuFichier[(i - 1) * (1024 - 6)], size - cpt * (1024 - 6));
+                            sendto(new_socket, to_send, size - cpt * (1024 - 6) + 5, 0, (struct sockaddr *)&c_addr, c_addr_size); //size-cpt*(1024-6)+6-1
+                        }
+                        else
+                        {
+                            memcpy(&to_send[6], &BuFichier[(i - 1) * (1024 - 6)], (1024 - 6));
+                            sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+                        }
+                        i += 1;
                     }
 
                     // sending the buffer
-                    
+
                     //printf("Sent segment %s ; awaiting %s\n", seq_number, expected_ack);
 
                     // Waiting for ACK
                     memset(ack_buff, 0, sizeof(ack_buff));
                     fd_set set;
-                    FD_SET(new_socket,&set);
+                    FD_SET(new_socket, &set);
                     struct timeval timeout;
                     timeout.tv_sec = 0;
-                    timeout.tv_usec=300;
+                    timeout.tv_usec = 300;
                     int success;
-                    success = select(new_socket+1, &set,NULL,NULL,&timeout);
-                    if (success>0){
-
-                    recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
-                    //printf("Received : %s, expected %s\n\n", ack_buff, expected_ack);
-
-                    if (strncmp(expected_ack, ack_buff, 9) == 0)
+                    success = select(new_socket + 1, &set, NULL, NULL, &timeout);
+                    if (success > 0)
                     {
-                        //printf("ACK OK - next segment\n");
-                        i += 1;
-                        //printf("Preparing to send segment number %d\n", i);
+
+                        recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
+                        //printf("Received : %s, expected %s\n\n", ack_buff, expected_ack);
+
+                        if (strncmp(expected_ack, ack_buff, 9) == 0)
+                        {
+                            //printf("ACK OK - next segment\n");
+                            i += 1;
+                            //printf("Preparing to send segment number %d\n", i);
+                        }
+                        else
+                        {
+                            printf("Segment lost - retransmission needed\n");
+                            printf("%s\n", ack_buff);
+                            char ack_number[6];
+                            memcpy(&ack_number, &ack_buff[6], 6);
+                            int ack_num_int;
+                            ack_num_int = atoi(ack_number);
+                            printf("Ack number :%d ", ack_num_int);
+
+                            //printf("Everything received until segment number %s\n", current_ack);
+                            //printf("Preparing to re-send segment number %d\n", i);
+                        }
                     }
                     else
                     {
-                        printf("Segment lost - retransmission needed\n");
-                        printf("%s\n", ack_buff);
-                        
-                        //printf("Everything received until segment number %s\n", current_ack);
-                        //printf("Preparing to re-send segment number %d\n", i);
-                    }
-                    } else {
                         //printf("Timed out ; preparing to send previous segment\n");
                     }
                 }
 
-				char FIN[3]="FIN";
-				for (int h = 0; h<1; h++){
-					sendto(new_socket, FIN,3, 0, (struct sockaddr *)&c_addr, c_addr_size);
-				}
-                
+                char FIN[3] = "FIN";
+                for (int h = 0; h < 1; h++)
+                {
+                    sendto(new_socket, FIN, 3, 0, (struct sockaddr *)&c_addr, c_addr_size);
+                }
 
                 printf("File sent ! \n");
             }
