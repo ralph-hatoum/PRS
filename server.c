@@ -204,6 +204,22 @@ int main(int argc, char *argv[])
                             int ack_num_int;
                             ack_num_int = atoi(ack_number);
                             printf("Ack number :%d ", ack_num_int);
+                            if (ack_num_int >= i - 2)
+                            {
+                                char to_send[1024];
+                                sprintf(to_send, "%s", ack_number);
+
+                                if (ack_num_int + 1 == cpt + 1 && (size - cpt * (1024 - 6)) > 0)
+                                {
+                                    memcpy(&to_send[6], &BuFichier[(ack_num_int + 1 - 1) * (1024 - 6)], size - cpt * (1024 - 6));
+                                    sendto(new_socket, to_send, size - cpt * (1024 - 6) + 5, 0, (struct sockaddr *)&c_addr, c_addr_size); //size-cpt*(1024-6)+6-1
+                                }
+                                else
+                                {
+                                    memcpy(&to_send[6], &BuFichier[(ack_num_int + 1 - 1) * (1024 - 6)], (1024 - 6));
+                                    sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+                                }
+                            }
 
                             //printf("Everything received until segment number %s\n", current_ack);
                             //printf("Preparing to re-send segment number %d\n", i);
