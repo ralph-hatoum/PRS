@@ -109,6 +109,9 @@ int main(int argc, char *argv[])
                 printf("taille %d\n", cpt);
                 char BuFichier[size];
 
+                int *ack_tab = NULL;
+                ack_tab = malloc(sizeof(cpt));
+
                 fread(BuFichier, size - 1, 1, fichier);
 
                 int i = 1;
@@ -119,6 +122,7 @@ int main(int argc, char *argv[])
                 char expected_ack[12];
                 int expected_ack_number = 0;
                 char to_send[1024];
+                int max_ack = 0;
                 while (i <= cpt + 1)
                 {
                     for (int k = 0; k < 3; k++)
@@ -172,10 +176,6 @@ int main(int argc, char *argv[])
                         i += 1;
                     }
 
-                    // sending the buffer
-
-                    //printf("Sent segment %s ; awaiting %s\n", seq_number, expected_ack);
-
                     // Waiting for ACK
                     memset(ack_buff, 0, sizeof(ack_buff));
                     fd_set set;
@@ -189,18 +189,29 @@ int main(int argc, char *argv[])
                     {
 
                         recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
-                        //printf("Received : %s, expected %s\n\n", ack_buff, expected_ack);
 
-                        while (strncmp(expected_ack, ack_buff, 9) != 0)
+                        char ack_number[6];
+                        memcpy(&ack_number, &ack_buff[6], 6);
+                        int ack_num_int;
+                        ack_num_int = atoi(ack_number);
+                        printf("Received ack number :%d ", ack_num_int);
+
+                        if (ack_num_int > max_ack)
                         {
-                            char ack_number[6];
-                            memcpy(&ack_number, &ack_buff[6], 6);
-                            int ack_num_int;
-                            ack_num_int = atoi(ack_number);
-                            printf("Ack number :%d ", ack_num_int);
+                            max_ack = ack_num_int;
+                        }
+                        ack_tab[ack_num_int] += 1;
 
-                            if (ack_num_int != expected_ack_number - 1 && ack_num_int != expected_ack_number - 2)
+                        if (ack_num_int < max_ack)
+                        {
+                            printf("Packet %d already received, late ACK to be ignored\n", ack_num_int);
+                        }
+                        else
+                        {
+                            ack_tab[ack_num_int] += 1;
+                            if (ack_tab[ack_num_int] > 1)
                             {
+                                printf("Duplicate ACK %d; most likely packet loss - need to retransmit packet %d", ack_num_int, ack_num_int);
                                 char to_send[1024];
                                 sprintf(to_send, "%s", ack_number);
 
@@ -214,8 +225,6 @@ int main(int argc, char *argv[])
                                     memcpy(&to_send[6], &BuFichier[(ack_num_int + 1 - 1) * (1024 - 6)], (1024 - 6));
                                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                                 }
-                                printf("Resent packet %d\n", ack_num_int);
-                                i = ack_num_int;
                             }
                         }
                         i += 1;
@@ -243,6 +252,7 @@ int main(int argc, char *argv[])
                 }
 
                 printf("File sent ! \n");
+                free(ack_tab);
             }
         }
         //exit(0);
