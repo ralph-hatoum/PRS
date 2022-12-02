@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
                             int ack_num_int;
                             ack_num_int = atoi(ack_number);
                             printf("Ack number :%d ", ack_num_int);
-                            if (ack_num_int >= i - 2)
+                            if (ack_num_int >= i - 3)
                             {
                                 char to_send[1024];
                                 sprintf(to_send, "%s", ack_number);
