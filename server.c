@@ -123,6 +123,11 @@ int main(int argc, char *argv[])
                 int expected_ack_number = 0;
                 char to_send[1024];
                 int max_ack = 0;
+                fd_set set;
+                FD_SET(new_socket, &set);
+                struct timeval timeout;
+                timeout.tv_sec = 0;
+                timeout.tv_usec = 300;
                 while (i <= cpt + 1)
                 {
                     for (int k = 0; k < 3; k++)
@@ -173,33 +178,29 @@ int main(int argc, char *argv[])
                             memcpy(&to_send[6], &BuFichier[(i - 1) * (1024 - 6)], (1024 - 6));
                             sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                         }
+                        printf("Sent packet : %d\n", i);
                         i += 1;
                     }
 
                     // Waiting for ACK
                     memset(ack_buff, 0, sizeof(ack_buff));
-                    fd_set set;
-                    FD_SET(new_socket, &set);
-                    struct timeval timeout;
-                    timeout.tv_sec = 0;
-                    timeout.tv_usec = 300;
                     int success;
                     success = select(new_socket + 1, &set, NULL, NULL, &timeout);
                     if (success > 0)
                     {
 
                         recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
-
                         char ack_number[6];
                         memcpy(&ack_number, &ack_buff[6], 6);
                         int ack_num_int;
                         ack_num_int = atoi(ack_number);
-                        printf("Received ack number :%d ", ack_num_int);
+                        printf("Received ack number : %d \n", ack_num_int);
 
                         if (ack_num_int > max_ack)
                         {
                             max_ack = ack_num_int;
                         }
+                        printft("Current max ack : %d, confirming all segments until segment %d were received\n", max_ack, max_ack);
                         ack_tab[ack_num_int] += 1;
 
                         if (ack_num_int < max_ack)
@@ -211,7 +212,7 @@ int main(int argc, char *argv[])
                             ack_tab[ack_num_int] += 1;
                             if (ack_tab[ack_num_int] > 1)
                             {
-                                printf("Duplicate ACK %d; most likely packet loss - need to retransmit packet %d", ack_num_int, ack_num_int);
+                                printf("Duplicate ACK %d; most likely packet loss - need to retransmit packet %d", ack_num_int, ack_num_int + 1);
                                 char to_send[1024];
                                 sprintf(to_send, "%s", ack_number);
 
