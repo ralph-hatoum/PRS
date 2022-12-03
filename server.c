@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
                                     memcpy(&to_send[6], &BuFichier[(ack_num_int + 1 - 1) * (1024 - 6)], (1024 - 6));
                                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                                 }
-                                printf("Resent seg number %d\n", ack_num_int + 1)
+                                printf("Resent seg number %d\n", ack_num_int + 1);
                             }
                         }
                         i += 1;
