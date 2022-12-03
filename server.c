@@ -128,58 +128,61 @@ int main(int argc, char *argv[])
                 struct timeval timeout;
                 timeout.tv_sec = 1;
                 timeout.tv_usec = 0;
-                while (i <= cpt + 1)
+                while (i <= cpt + 1 && max_ack != i)
                 {
-                    for (int k = 0; k < 3; k++)
+                    if (i <= cpt + 1)
                     {
+                        for (int k = 0; k < 3; k++)
+                        {
 
-                        // Initializing sending buffer
-                        char seq_number[8];
-                        memset(seq_number, 0, sizeof(seq_number));
-                        // ADDING SEQ NUMBER
-                        if (i < 10)
-                        {
-                            sprintf(seq_number, "00000%d ", i);
-                        }
-                        else if (i < 100)
-                        {
-                            sprintf(seq_number, "0000%d ", i);
-                        }
-                        else if (i < 1000)
-                        {
-                            sprintf(seq_number, "000%d ", i);
-                        }
-                        else if (i < 10000)
-                        {
-                            sprintf(seq_number, "00%d ", i);
-                        }
-                        else if (i < 100000)
-                        {
-                            sprintf(seq_number, "0%d ", i);
-                        }
-                        else
-                        {
-                            sprintf(seq_number, "%d ", i);
-                        }
+                            // Initializing sending buffer
+                            char seq_number[8];
+                            memset(seq_number, 0, sizeof(seq_number));
+                            // ADDING SEQ NUMBER
+                            if (i < 10)
+                            {
+                                sprintf(seq_number, "00000%d ", i);
+                            }
+                            else if (i < 100)
+                            {
+                                sprintf(seq_number, "0000%d ", i);
+                            }
+                            else if (i < 1000)
+                            {
+                                sprintf(seq_number, "000%d ", i);
+                            }
+                            else if (i < 10000)
+                            {
+                                sprintf(seq_number, "00%d ", i);
+                            }
+                            else if (i < 100000)
+                            {
+                                sprintf(seq_number, "0%d ", i);
+                            }
+                            else
+                            {
+                                sprintf(seq_number, "%d ", i);
+                            }
 
-                        sprintf(expected_ack, "ACK%s", seq_number);
-                        expected_ack_number = i;
-                        memset(to_send, 0, sizeof(to_send));
-                        sprintf(to_send, "%s", seq_number);
-                        // Reading bytes of the file
+                            sprintf(expected_ack, "ACK%s", seq_number);
+                            expected_ack_number = i;
+                            memset(to_send, 0, sizeof(to_send));
+                            sprintf(to_send, "%s", seq_number);
+                            // Reading bytes of the file
 
-                        if (i == cpt + 1 && (size - cpt * (1024 - 6)) > 0)
-                        {
-                            memcpy(&to_send[6], &BuFichier[(i - 1) * (1024 - 6)], size - cpt * (1024 - 6));
-                            sendto(new_socket, to_send, size - cpt * (1024 - 6) + 5, 0, (struct sockaddr *)&c_addr, c_addr_size); //size-cpt*(1024-6)+6-1
+                            if (i == cpt + 1 && (size - cpt * (1024 - 6)) > 0)
+                            {
+                                memcpy(&to_send[6], &BuFichier[(i - 1) * (1024 - 6)], size - cpt * (1024 - 6));
+                                sendto(new_socket, to_send, size - cpt * (1024 - 6) + 5, 0, (struct sockaddr *)&c_addr, c_addr_size); //size-cpt*(1024-6)+6-1
+                            }
+                            else
+                            {
+                                memcpy(&to_send[6], &BuFichier[(i - 1) * (1024 - 6)], (1024 - 6));
+                                sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+                            }
+                            printf("Sent packet : %d\n", i);
+                            i += 1;
                         }
-                        else
-                        {
-                            memcpy(&to_send[6], &BuFichier[(i - 1) * (1024 - 6)], (1024 - 6));
-                            sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
-                        }
-                        printf("Sent packet : %d\n", i);
-                        i += 1;
                     }
 
                     // Waiting for ACK
