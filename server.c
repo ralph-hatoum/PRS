@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
                 timeout.tv_usec = 0;
                 while (i <= cpt + 1)
                 {
-                    for (int k = 0; k < 3; k++)
+                    for (int k = 0; k < 2; k++)
                     {
 
                         // Initializing sending buffer
@@ -215,6 +215,7 @@ int main(int argc, char *argv[])
                                 printf("Duplicate ACK %d; most likely packet loss - need to retransmit packet %d", ack_num_int, ack_num_int + 1);
                                 char to_send[1024];
                                 sprintf(to_send, "%s", ack_number);
+                                printf("%s\n", to_send);
 
                                 if (ack_num_int + 1 == cpt + 1 && (size - cpt * (1024 - 6)) > 0)
                                 {
@@ -226,6 +227,7 @@ int main(int argc, char *argv[])
                                     memcpy(&to_send[6], &BuFichier[(ack_num_int + 1 - 1) * (1024 - 6)], (1024 - 6));
                                     sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
                                 }
+                                printf("Resent seg number ")
                             }
                         }
                         i += 1;
