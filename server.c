@@ -278,7 +278,7 @@ int main(int argc, char *argv[])
                 {
                     sendto(new_socket, FIN, 3, 0, (struct sockaddr *)&c_addr, c_addr_size);
                 }
-
+                printf("max ack : %d, last packet sent : %i, justifying transmission is indeed done\n", max_ack, i);
                 printf("File sent ! \n");
                 free(ack_tab);
             }
