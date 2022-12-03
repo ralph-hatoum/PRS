@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
                 timeout.tv_usec = 0;
                 while (i <= cpt + 1)
                 {
-                    for (int k = 0; k < 2; k++)
+                    for (int k = 0; k < 3; k++)
                     {
 
                         // Initializing sending buffer
@@ -212,10 +212,32 @@ int main(int argc, char *argv[])
                             ack_tab[ack_num_int] += 1;
                             if (ack_tab[ack_num_int] > 1)
                             {
-                                printf("Duplicate ACK %d; most likely packet loss - need to retransmit packet %d", ack_num_int, ack_num_int + 1);
+                                printf("Duplicate ACK %d; most likely packet loss - need to retransmit packet %d\n", ack_num_int, ack_num_int + 1);
                                 char to_send[1024];
-                                sprintf(to_send, "%s", ack_number);
-                                printf("%s\n", to_send);
+                                if (ack_num_int + 1 < 10)
+                                {
+                                    sprintf(to_send, "00000%d ", ack_num_int + 1);
+                                }
+                                else if (ack_num_int + 1 < 100)
+                                {
+                                    sprintf(to_send, "0000%d ", ack_num_int + 1);
+                                }
+                                else if (ack_num_int + 1 < 1000)
+                                {
+                                    sprintf(to_send, "000%d ", ack_num_int + 1);
+                                }
+                                else if (ack_num_int + 1 < 10000)
+                                {
+                                    sprintf(to_send, "00%d ", ack_num_int + 1);
+                                }
+                                else if (ack_num_int + 1 < 100000)
+                                {
+                                    sprintf(to_send, "0%d ", ack_num_int + 1);
+                                }
+                                else
+                                {
+                                    sprintf(to_send, "%d ", ack_num_int + 1);
+                                }
 
                                 if (ack_num_int + 1 == cpt + 1 && (size - cpt * (1024 - 6)) > 0)
                                 {
