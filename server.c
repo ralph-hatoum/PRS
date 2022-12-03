@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
                         {
                             max_ack = ack_num_int;
                         }
-                        printft("Current max ack : %d, confirming all segments until segment %d were received\n", max_ack, max_ack);
+                        printf("Current max ack : %d, confirming all segments until segment %d were received\n", max_ack, max_ack);
                         ack_tab[ack_num_int] += 1;
 
                         if (ack_num_int < max_ack)
