@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
                 fd_set set;
                 FD_SET(new_socket, &set);
                 struct timeval timeout;
-                timeout.tv_sec = 0;
+                timeout.tv_sec = 2;
                 timeout.tv_usec = 300;
                 while (i <= cpt + 1 && max_ack != i)
                 {
