@@ -13,27 +13,36 @@
 pthread_mutex_t mutex;
 int last_ack = 0;
 
+
 struct arg_struct{
 	int *skt;
 	struct sockaddr_in *addr_sck_i;
+	int *nbr_pck;
 };
 
 
 void *RcvThread (void *arg){
-	char ack_buf[100];
+	char ack_buf[8];
 	struct arg_struct *args = (struct arg_struct *)arg;
 	int s = sizeof *(args->addr_sck_i);
 	printf("size %d\n",s);
+	//printf("ack received: %d\n", *(args->nbr_pck));
 	while(1){
-		recvfrom(*(args->skt), (char *)ack_buf, 1024, 0, (struct sockaddr *)(args->addr_sck_i), &s);
+		recvfrom(*(args->skt), (char *)ack_buf, 9, 0, (struct sockaddr *)(args->addr_sck_i), &s);
+		//printf("ack-buf : %s\n", ack_buf);
 		int a = atoi(&ack_buf[3]);
 		//printf("ack received: %d\n", a);
 		pthread_mutex_lock(&mutex);
 		if (a>last_ack){
 			last_ack = a;
 		}
-		printf("last : %d\n", last_ack);
 		pthread_mutex_unlock(&mutex);
+		if (a == *(args->nbr_pck)){
+			printf("fin thread %d\n",a);
+			return NULL;
+		}
+		//printf("last : %d\n", last_ack);
+
 		memset(ack_buf, 0, sizeof(ack_buf));
 	};
 	return NULL;
@@ -43,11 +52,15 @@ void *RcvThread (void *arg){
 int main(int argc, char *argv[])
 {
     // On vérifie que le port du serveur est bien fourni en argument
-    if (argc != 2)
+    if (argc != 5)
     {
-        printf("Utilisation : ./server <port UDP>\n");
+        printf("Utilisation : ./server <port UDP> <packet_size> <window_size> <timeout>\n");
         exit(0);
     }
+
+	int packet_size = atoi(argv[2]);
+	int wnd_size = atoi(argv[3]);
+	double timeout = atoi(argv[4]);
 
     // Initialisation variables pour la socket udp
     int udp_sock;
@@ -110,10 +123,10 @@ int main(int argc, char *argv[])
             bind(new_socket, (struct sockaddr *)&addr_new_sock, sizeof(addr_new_sock));
 
             //Renvoi du SYNACK+nouveau port de connexion
-            char SYNACK[1024];
-            snprintf(SYNACK, 1024, "SYN-ACK%d", new_port);
+            char SYNACK[packet_size];
+            snprintf(SYNACK, packet_size, "SYN-ACK%d", new_port);
             printf("%s\n", SYNACK);
-            sendto(udp_sock, SYNACK, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+            sendto(udp_sock, SYNACK, packet_size, 0, (struct sockaddr *)&c_addr, c_addr_size);
 
             // On recoit le SYN sur l'ancienne socket
             char msg_udp[9];
@@ -125,7 +138,7 @@ int main(int argc, char *argv[])
                 printf("Received : %s from socket number %d, connection established !!!\n", msg_udp, udp_sock);
 
 				char Buffilename[100];
-                recvfrom(new_socket, (char *)Buffilename, 1024, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
+                recvfrom(new_socket, (char *)Buffilename, packet_size, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
 				char *filename = strtok(Buffilename, " ");
 
                 printf("Received file name : %s\n", filename);
@@ -136,17 +149,19 @@ int main(int argc, char *argv[])
 				int size = ftell(fichier)+1; // get current file pointer
 				fseek(fichier, 0, SEEK_SET);
 				printf("taille %d\n", size);
-				int cpt = size/(1024-6);//6 car 6 digits de num plus espace
+				int cpt = size/(packet_size-6);//6 car 6 digits de num plus espace
 				printf("taille %d\n", cpt);
 				char *BuFichier = (char*) malloc(sizeof(char)*size);
 
 				fread(BuFichier,size-1,1,fichier);
-				
-				
+
+
 				//thread ecoute
+				int nbr_packet = cpt+1;
 				struct arg_struct arguments;
 				arguments.skt = &new_socket;
 				arguments.addr_sck_i = &c_addr;
+				arguments.nbr_pck = &nbr_packet;
 				printf("Before Thread\n");
 				pthread_t thread_id;
 				pthread_create(&thread_id, NULL, RcvThread, (void *)&arguments);
@@ -156,119 +171,70 @@ int main(int argc, char *argv[])
                 fseek(fichier, 0, SEEK_SET);
                 // Envoi du fichier
                 printf("Sending file on socket number %d\n", new_socket);
-                char ack_buff[1024];
+                char ack_buff[packet_size];
                 char expected_ack[12];
-                
-                int wnd_size = 10;
+
                 while (i <= cpt+1)
                 {
-                	sleep(0.015);
+                	sleep(timeout);
                 	pthread_mutex_lock(&mutex);
                 	i = last_ack+1;
 					pthread_mutex_unlock(&mutex);
-                	
+
                 	if(cpt+1-i<wnd_size){
                 		wnd_size = cpt+2-i;
                 	}
-                	printf("wnd size : %d\n", wnd_size);
-                	
-                	for (int h=0; h<wnd_size; h++){
-		                int no_ack_flag = 0;
-		                // Initializing sending buffer
-		                char to_send[1024];
-		                char seq_number[8];
-		                memset(seq_number, 0, sizeof(seq_number));
-		                // ADDING SEQ NUMBER
-		                if (i < 10)
-		                {
-		                    sprintf(seq_number, "00000%d ", i);
-		                }
-		                else if (i < 100)
-		                {
-		                    sprintf(seq_number, "0000%d ", i);
-		                }
-		                else if (i < 1000)
-		                {
-		                    sprintf(seq_number, "000%d ", i);
-		                }
-		                else if (i < 10000)
-		                {
-		                    sprintf(seq_number, "00%d ", i);
-		                }
-		                else if (i < 100000)
-		                {
-		                    sprintf(seq_number, "0%d ", i);
-		                }
-		                else
-		                {
-		                    sprintf(seq_number, "%d ", i);
-		                }
+                	//printf("wnd size : %d  cpt+1 : %d\n", wnd_size, cpt+1);
 
-		                sprintf(expected_ack, "ACK%s", seq_number);
-		                memset(to_send, 0, sizeof(to_send));
-		                sprintf(to_send, "%s", seq_number);
+					int j;
+					int v;
+                	for (int h=0; h<wnd_size; h++){
+		                // Initializing sending buffer
+		                char to_send[packet_size];
+						memset(to_send, 0, sizeof(to_send));
+
+						int sizeNum = 0;
+						j = i;
+						while(j!=0){// mesure taille du numero de segment en char
+							j=j/10;
+							sizeNum++;
+						}
+						for(int u=0; u<(6-sizeNum); u++){
+							strcpy(&to_send[u],"0");
+							v=u;
+						}
+						sprintf(&to_send[v+1], "%d", i);
+
 		                // Reading bytes of the file
-		                if (i == cpt+1 && (size-cpt*(1024-6))>0){
-		                	memcpy(&to_send[6], &BuFichier[(i-1)*(1024-6)], size-cpt*(1024-6));
-		                	sendto(new_socket, to_send, size-cpt*(1024-6)+5, 0, (struct sockaddr *)&c_addr, c_addr_size);//size-cpt*(1024-6)+6-1
+		                if (i == cpt+1 && (size-cpt*(packet_size-6))>0){
+		                	memcpy(&to_send[6], &BuFichier[(i-1)*(packet_size-6)], size-cpt*(packet_size-6));
+		                	sendto(new_socket, to_send, size-cpt*(packet_size-6)+5, 0, (struct sockaddr *)&c_addr, c_addr_size);//size-cpt*(packet_size-6)+6-1
 		                	//i++;
-		                	printf("dernier message %d envoyé\n", i-1);
-		                }else if ((size-cpt*(1024-6))==0){
+		                	//printf("dernier message %d envoyé\n", i-1);
+		                }else if ((size-cpt*(packet_size-6))==0){
 		                	i++;
 		                }else{
-		                	memcpy(&to_send[6], &BuFichier[(i-1)*(1024-6)],(1024-6));
-		                	sendto(new_socket, to_send, 1024, 0, (struct sockaddr *)&c_addr, c_addr_size);
+		                	memcpy(&to_send[6], &BuFichier[(i-1)*(packet_size-6)],(packet_size-6));
+		                	sendto(new_socket, to_send, packet_size, 0, (struct sockaddr *)&c_addr, c_addr_size);
 		                	i++;
-		                	printf("message %d envoyé\n", i-1);
+		                	//printf("message %d envoyé\n", i-1);
 		                }
 		            }
-		            /*if(i == cpt+1){
-                		i++;
-                	}*/
-		            
-
-                    // sending the buffer
-
-                    //printf("Sent segment %s ; awaiting %s\n", seq_number, expected_ack);
-					
-					/*
-                    // Waiting for ACK
-                    memset(ack_buff, 0, sizeof(ack_buff));
-                    fd_set set;
-                    FD_SET(new_socket,&set);
-                    struct timeval timeout;
-                    timeout.tv_sec = 0;
-                    timeout.tv_usec = 300;
-                    int success;
-                    success = select(new_socket+1, &set,NULL,NULL,&timeout);
-                    if (success>0){
-
-                        recvfrom(new_socket, (char *)ack_buff, 1024, 0, (struct sockaddr *)&c_addr, &c_addr_size);
-                        if (strncmp(expected_ack, ack_buff, 9) == 0)
-                        {
-                            i += 1;//envoi seg suivant
-                        }
-                        else
-                        {
-                            //printf("Segment lost - retransmission needed\n");
-                            char *to_throw = strtok(ack_buff, "_");
-                            char *current_ack = strtok(NULL, "_");
-                            //printf("Everything received until segment number %s\n", current_ack);
-                            //printf("Preparing to re-send segment number %d\n", i);
-                        }
-                    } else {
-                        //printf("Timed out ; preparing to send previous segment\n");
-                    }*/
+		            //printf("i : %d\n", i);
                 }
+                printf("FFFFFFIIIIIIINNNNNN\n");
 				char FIN[3]="FIN";
 				for (int v = 0; v<1000; v++){
 					sendto(new_socket, FIN,3, 0, (struct sockaddr *)&c_addr, c_addr_size);
+					sleep(0.01);
+					//printf("FIN\n");
 				}
 				//libere memoire et arrete thread
                 free(BuFichier);
                 pthread_join(thread_id, NULL);
 
                 printf("File sent ! \n");
+                exit(0);
             }
         }
         //exit(0);

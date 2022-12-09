@@ -1,8 +1,5 @@
-make: client server 
+make: server 
 
-client: client.c
-	gcc client.c -o client
-
-server: server.c
-	gcc server.c -o server
+server: server-6.c
+	gcc -pthread server-6.c -o server
 
