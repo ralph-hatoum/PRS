@@ -13,6 +13,8 @@
 pthread_mutex_t mutex;
 int last_ack = 0;
 
+pthread_mutex_t client_number_mutex;
+
 struct arg_struct
 {
 	int *skt;
@@ -92,6 +94,7 @@ int main(int argc, char *argv[])
 	// structure pour récupérer infos clients
 	struct sockaddr_in c_addr;
 	int c_addr_size = sizeof(c_addr);
+	int number_of_clients = 0;
 
 	while (1)
 	{
@@ -105,7 +108,9 @@ int main(int argc, char *argv[])
 
 			// On est ici si le message reçu est un SYN
 			printf("Someone attempting to connect ...\n");
-
+			pthread_mutex_lock(&number_of_clients);
+			number_of_clients += 1;
+			pthread_mutex_unlock(&number_of_clients);
 			//Initialisation de la socket de discussion
 			int new_socket = socket(AF_INET, SOCK_DGRAM, 0);
 			if (new_socket < 0)
@@ -114,7 +119,7 @@ int main(int argc, char *argv[])
 				exit(-1);
 			}
 			// Nouveau port pour la nouvelle socket : ancien port + 1
-			int new_port = atoi(argv[1]) + 1;
+			int new_port = atoi(argv[1]) + number_of_clients;
 			struct sockaddr_in addr_new_sock;
 			memset((char *)&addr_new_sock, 0, sizeof(addr_new_sock));
 			addr_new_sock.sin_family = AF_INET;
@@ -247,6 +252,9 @@ int main(int argc, char *argv[])
 					pthread_join(thread_id, NULL);
 
 					printf("File sent ! \n");
+					pthread_mutex_lock(&number_of_clients);
+					number_of_clients -= 1;
+					pthread_mutex_unlock(&number_of_clients);
 					exit(0);
 				}
 			}
