@@ -13,8 +13,6 @@
 pthread_mutex_t mutex;
 int last_ack = 0;
 
-pthread_mutex_t client_number_mutex;
-
 struct arg_struct
 {
 	int *skt;
@@ -250,9 +248,6 @@ int main(int argc, char *argv[])
 					pthread_join(thread_id, NULL);
 
 					printf("File sent ! \n");
-					pthread_mutex_lock(&number_of_clients);
-					number_of_clients -= 1;
-					pthread_mutex_unlock(&number_of_clients);
 					exit(0);
 				}
 			}
