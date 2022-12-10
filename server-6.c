@@ -108,9 +108,7 @@ int main(int argc, char *argv[])
 
 			// On est ici si le message reçu est un SYN
 			printf("Someone attempting to connect ...\n");
-			pthread_mutex_lock(&number_of_clients);
 			number_of_clients += 1;
-			pthread_mutex_unlock(&number_of_clients);
 			//Initialisation de la socket de discussion
 			int new_socket = socket(AF_INET, SOCK_DGRAM, 0);
 			if (new_socket < 0)
