@@ -102,41 +102,42 @@ int main(int argc, char *argv[])
 		// Three way handshake ici
 		if (strcmp(msg_udp, "SYN") == 0)
 		{
-			if (fork() == 0)
+
+			// On est ici si le message reçu est un SYN
+			printf("Someone attempting to connect ...\n");
+
+			//Initialisation de la socket de discussion
+			int new_socket = socket(AF_INET, SOCK_DGRAM, 0);
+			if (new_socket < 0)
 			{
-				// On est ici si le message reçu est un SYN
-				printf("Someone attempting to connect ...\n");
+				printf("New udp socket failed");
+				exit(-1);
+			}
+			// Nouveau port pour la nouvelle socket : ancien port + 1
+			int new_port = atoi(argv[1]) + 1;
+			struct sockaddr_in addr_new_sock;
+			memset((char *)&addr_new_sock, 0, sizeof(addr_new_sock));
+			addr_new_sock.sin_family = AF_INET;
+			addr_new_sock.sin_port = htons(new_port);
+			addr_new_sock.sin_addr.s_addr = INADDR_ANY;
+			int addr_new_sock_len = sizeof(addr_new_sock);
+			setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 
-				//Initialisation de la socket de discussion
-				int new_socket = socket(AF_INET, SOCK_DGRAM, 0);
-				if (new_socket < 0)
-				{
-					printf("New udp socket failed");
-					exit(-1);
-				}
-				// Nouveau port pour la nouvelle socket : ancien port + 1
-				int new_port = atoi(argv[1]) + 1;
-				struct sockaddr_in addr_new_sock;
-				memset((char *)&addr_new_sock, 0, sizeof(addr_new_sock));
-				addr_new_sock.sin_family = AF_INET;
-				addr_new_sock.sin_port = htons(new_port);
-				addr_new_sock.sin_addr.s_addr = INADDR_ANY;
-				int addr_new_sock_len = sizeof(addr_new_sock);
-				setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+			bind(new_socket, (struct sockaddr *)&addr_new_sock, sizeof(addr_new_sock));
 
-				bind(new_socket, (struct sockaddr *)&addr_new_sock, sizeof(addr_new_sock));
+			//Renvoi du SYNACK+nouveau port de connexion
+			char SYNACK[packet_size];
+			snprintf(SYNACK, packet_size, "SYN-ACK%d", new_port);
+			printf("%s\n", SYNACK);
+			sendto(udp_sock, SYNACK, packet_size, 0, (struct sockaddr *)&c_addr, c_addr_size);
 
-				//Renvoi du SYNACK+nouveau port de connexion
-				char SYNACK[packet_size];
-				snprintf(SYNACK, packet_size, "SYN-ACK%d", new_port);
-				printf("%s\n", SYNACK);
-				sendto(udp_sock, SYNACK, packet_size, 0, (struct sockaddr *)&c_addr, c_addr_size);
+			// On recoit le SYN sur l'ancienne socket
+			char msg_udp[9];
+			recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
 
-				// On recoit le SYN sur l'ancienne socket
-				char msg_udp[9];
-				recvfrom(udp_sock, (char *)msg_udp, 9, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
-
-				if (strcmp(msg_udp, "ACK") == 0)
+			if (strcmp(msg_udp, "ACK") == 0)
+			{
+				if (fork() == 0)
 				{
 					// Si on reçoit un ack, connexion établie, on peut communiquer sur la nouvelle socket
 					printf("Received : %s from socket number %d, connection established !!!\n", msg_udp, udp_sock);
@@ -250,6 +251,5 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-		//exit(0);
 	};
 }
