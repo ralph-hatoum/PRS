@@ -237,10 +237,10 @@ int main(int argc, char *argv[])
 					}
 					printf("FFFFFFIIIIIIINNNNNN\n");
 					char FIN[3] = "FIN";
-					for (int v = 0; v < 1000; v++)
+					for (int v = 0; v < 100; v++)
 					{
 						sendto(new_socket, FIN, 3, 0, (struct sockaddr *)&c_addr, c_addr_size);
-						sleep(0.01);
+						sleep(0.05);
 						//printf("FIN\n");
 					}
 					//libere memoire et arrete thread
