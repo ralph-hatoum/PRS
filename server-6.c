@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 				{
 					// Si on reçoit un ack, connexion établie, on peut communiquer sur la nouvelle socket
 					printf("Received : %s from socket number %d, connection established !!!\n", msg_udp, udp_sock);
-					printf("Serving client on port %d", new_port);
+					printf("Serving client on port %d\n", new_port);
 					char Buffilename[100];
 					recvfrom(new_socket, (char *)Buffilename, packet_size, MSG_WAITALL, (struct sockaddr *)&c_addr, &c_addr_size);
 					char *filename = strtok(Buffilename, " ");
