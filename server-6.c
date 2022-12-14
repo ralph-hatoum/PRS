@@ -161,6 +161,8 @@ int main(int argc, char *argv[])
 
 					fread(BuFichier, size - 1, 1, fichier);
 
+					fclose(fichier);
+
 					//thread ecoute
 					int nbr_packet = cpt + 1;
 					struct arg_struct arguments;
